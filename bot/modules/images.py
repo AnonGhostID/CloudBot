@@ -8,6 +8,7 @@ from pyrogram.filters import command, regex
 
 from bot import bot, LOGGER, config_dict, DATABASE_URL
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage
+from bot.helper.telegram_helper.download_paths import temporary_download_path
 from bot.helper.ext_utils.bot_utils import handleIndex, new_task
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -27,17 +28,19 @@ async def picture_add(_, message):
     elif resm and resm.photo:
         if resm.photo.file_size > 5242880 * 2:
             return await editMessage(editable, "<i>Media is Not Supported! Only Photos!!</i>")
+        photo_dir = None
         try:
-            photo_dir = await resm.download()
+            photo_dir = await resm.download(file_name=temporary_download_path(resm))
             await editMessage(editable, "<b>Now, Uploading to <code>graph.org</code>, Please Wait...</b>")
             await asleep(1)
             pic_add = f'https://graph.org{upload_file(photo_dir)[0]}'
             LOGGER.info(f"Telegraph Link : {pic_add}")
         except Exception as e:
             LOGGER.error(f"Images Error: {str(e)}")
-            await editMessage(editable, str(e))
+            return await editMessage(editable, str(e))
         finally:
-            await aioremove(photo_dir)
+            if photo_dir and await aiopath.exists(photo_dir):
+                await aioremove(photo_dir)
     else:
         help_msg = "<b>By Replying to Link (Telegra.ph or DDL):</b>"
         help_msg += f"\n<code>/{BotCommands.AddImageCommand}" + " {link}" + "</code>\n"

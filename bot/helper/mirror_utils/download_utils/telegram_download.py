@@ -9,6 +9,7 @@ from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage, delete_links
 from bot.helper.ext_utils.task_manager import is_queued, limit_checker, stop_duplicate_check
+from bot.helper.telegram_helper.download_paths import download_path, media_filename, safe_filename
 
 global_lock = Lock()
 GLOBAL_GID = set()
@@ -112,11 +113,12 @@ class TelegramDownloadHelper:
                 download = media.file_unique_id not in GLOBAL_GID
 
             if download:
-                if filename == "":
-                    name = media.file_name if hasattr(media, 'file_name') else 'None'
-                else:
-                    name = filename
-                    path = path + name
+                name = safe_filename(filename) if filename else media_filename(message)
+                try:
+                    path = download_path(path, name)
+                except OSError as e:
+                    await self.__onDownloadError(str(e))
+                    return
                 size = media.file_size
                 gid = media.file_unique_id
 

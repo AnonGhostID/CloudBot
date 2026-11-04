@@ -16,6 +16,7 @@ from aioshutil import rmtree as aiormtree
 
 from bot import config_dict, user_data, DATABASE_URL, MAX_SPLIT_SIZE, list_drives_dict, categories_dict, aria2, GLOBAL_EXTENSION_FILTER, status_reply_dict_lock, Interval, aria2_options, aria2c_global, IS_PREMIUM_USER, download_dict, qbit_options, get_client, LOGGER, bot, extra_buttons, shorteners_list
 from bot.helper.telegram_helper.message_utils import sendMessage, sendFile, editMessage, deleteMessage, update_all_messages
+from bot.helper.telegram_helper.download_paths import download_path, safe_filename
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
@@ -962,11 +963,13 @@ async def update_private_file(_, message, pre_message):
             shorteners_list.clear()
         await deleteMessage(message)
     elif doc := message.document:
-        file_name = doc.file_name
+        file_name = safe_filename(doc.file_name)
+        directory = getcwd()
         path = file_name
         if file_name.startswith('wzml_') and file_name.endswith('.py'):
-            path = f'bot/helper/themes/{file_name}'
-        await message.download(file_name=f'{getcwd()}/{path}')
+            directory = 'bot/helper/themes'
+            path = f'{directory}/{file_name}'
+        await message.download(file_name=download_path(directory, file_name))
         if file_name == 'accounts.zip':
             if await aiopath.exists('accounts'):
                 await aiormtree('accounts')

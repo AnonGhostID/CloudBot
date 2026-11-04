@@ -16,6 +16,7 @@ from cryptography.fernet import Fernet
 
 from bot import OWNER_ID, LOGGER, bot, user_data, config_dict, categories_dict, DATABASE_URL, IS_PREMIUM_USER, MAX_SPLIT_SIZE
 from bot.helper.telegram_helper.message_utils import sendMessage, sendCustomMsg, editMessage, deleteMessage, sendFile, chat_info, user_info
+from bot.helper.telegram_helper.download_paths import download_path, temporary_download_path
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
@@ -385,7 +386,7 @@ async def set_thumb(client, message, pre_event, key, direct=False):
     path = "Thumbnails/"
     if not await aiopath.isdir(path):
         await mkdir(path)
-    photo_dir = await message.download()
+    photo_dir = await message.download(file_name=temporary_download_path(message))
     des_dir = ospath.join(path, f'{user_id}.jpg')
     await sync_to_async(Image.open(photo_dir).convert("RGB").save, des_dir, "JPEG")
     await aioremove(photo_dir)
@@ -402,7 +403,7 @@ async def add_rclone(client, message, pre_event):
     path = f'{getcwd()}/rclone/'
     if not await aiopath.isdir(path):
         await mkdir(path)
-    des_dir = ospath.join(path, f'{user_id}.conf')
+    des_dir = download_path(path, f'{user_id}.conf')
     await message.download(file_name=des_dir)
     update_user_ldata(user_id, 'rclone', f'rclone/{user_id}.conf')
     await deleteMessage(message)

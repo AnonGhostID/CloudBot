@@ -5,7 +5,7 @@
         </kbd>
     </a>
 
-<i>A Telegram Bot written in Python using Pyrogram Framework for mirroring/cloning online/local files on the Internet to your Google Drive, Telegram or to any RClone supported cloud. Based on [python-aria-mirror-bot](https://github.com/lzzy12/python-aria-mirror-bot). This is Enhanced Version of Base Repo [mirror-leech-telegram-bot](https://github.com/anasty17/mirror-leech-telegram-bot)</i>
+<i>A Telegram Bot written in Python using the Kurigram Pyrogram fork for mirroring/cloning online/local files on the Internet to your Google Drive, Telegram or to any RClone supported cloud. Based on [python-aria-mirror-bot](https://github.com/lzzy12/python-aria-mirror-bot). This is Enhanced Version of Base Repo [mirror-leech-telegram-bot](https://github.com/anasty17/mirror-leech-telegram-bot)</i>
 
 </p>
 

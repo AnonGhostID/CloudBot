@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from aiofiles import open as aiopen
 from aiofiles.os import remove
+from bot.helper.telegram_helper.download_paths import temporary_download_path
 
 
 async def get_links_from_message(text, bulk_start, bulk_end):
@@ -19,7 +20,7 @@ async def get_links_from_message(text, bulk_start, bulk_end):
 
 async def get_links_from_file(message, bulk_start, bulk_end):
     links_list = []
-    text_file_dir = await message.download()
+    text_file_dir = await message.download(file_name=temporary_download_path(message))
 
     async with aiopen(text_file_dir, 'r+') as f:
         lines = await f.readlines()

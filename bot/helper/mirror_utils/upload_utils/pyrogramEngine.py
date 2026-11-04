@@ -16,6 +16,7 @@ from aioshutil import copy
 from bot import config_dict, user_data, GLOBAL_EXTENSION_FILTER, bot, user, IS_PREMIUM_USER
 from bot.helper.themes import BotTheme
 from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.telegram_helper.download_paths import temporary_download_path
 from bot.helper.telegram_helper.message_utils import sendCustomMsg, editReplyMarkup, sendMultiMessage, chat_info, deleteMessage, get_tg_link_content
 from bot.helper.ext_utils.fs_utils import clean_unwanted, is_archive, get_base_name
 from bot.helper.ext_utils.bot_utils import get_readable_file_size, is_telegram_link, is_url, sync_to_async, download_image_url
@@ -64,17 +65,17 @@ class TgUploader:
             except Exception as e:
                 LOGGER.error(f"Thumb Access Error: {e}")
                 return None
-            if msg and not msg.photo:
+            if not msg or not msg.photo:
                 LOGGER.error("Thumb TgLink Invalid: Provide Link to Photo Only !")
                 return None
             _client = bot if client == 'bot' else user
-            photo_dir = await _client.download_media(msg)
+            photo_dir = await _client.download_media(msg, file_name=temporary_download_path(msg))
         elif is_url(thumb):
             photo_dir = await download_image_url(thumb)
         else:
             LOGGER.error("Custom Thumb Invalid")
             return None
-        if await aiopath.exists(photo_dir):
+        if photo_dir and await aiopath.exists(photo_dir):
             path = "Thumbnails"
             if not await aiopath.isdir(path):
                 await mkdir(path)

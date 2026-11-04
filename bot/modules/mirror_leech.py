@@ -26,6 +26,7 @@ from bot.helper.mirror_utils.download_utils.telegram_download import TelegramDow
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.telegram_helper.download_paths import safe_filename, temporary_download_path
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, editReplyMarkup, deleteMessage, get_tg_link_content, delete_links, auto_delete_message, open_category_btns, open_dump_btns
 from bot.helper.listeners.tasks_listener import MirrorLeechListener
 from bot.helper.ext_utils.help_messages import MIRROR_HELP_MESSAGE, CLONE_HELP_MESSAGE, YT_HELP_MESSAGE, help_string
@@ -112,6 +113,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         drive_id = GoogleDriveHelper.getIdFromUrl(drive_id)
 
     if folder_name and not isBulk:
+        folder_name = safe_filename(folder_name)
         seed = False
         ratio = None
         seed_time = None
@@ -203,8 +205,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             reply_text = reply_to.text.split('\n', 1)[0].strip()
             if is_url(reply_text) or is_magnet(reply_text):
                 link = reply_text
-        elif reply_to.document and (file_.mime_type == 'application/x-bittorrent' or file_.file_name.endswith('.torrent')):
-            link = await reply_to.download()
+        elif reply_to.document and (file_.mime_type == 'application/x-bittorrent' or (file_.file_name or '').endswith('.torrent')):
+            link = await reply_to.download(file_name=temporary_download_path(reply_to))
             file_ = None
 
     if not is_url(link) and not is_magnet(link) and not await aiopath.exists(link) and not is_rclone_path(link) and file_ is None:

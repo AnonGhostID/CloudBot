@@ -20,7 +20,7 @@ gunicorn
 httpx
 langcodes[data]
 lxml
-motor
+motor==3.7.1
 mutagen
 markdown
 natsort
@@ -28,8 +28,8 @@ pillow
 psutil
 pybase64
 pycountry
-pymongo
-pyrofork==2.2.11
+pymongo==4.19.0
+kurigram==2.2.26
 python-dotenv
 python-magic
 qbittorrent-api>=2024.5.61
@@ -37,7 +37,7 @@ requests
 speedtest-cli
 telegraph
 tenacity
-tgcrypto-pyrofork
+tgcrypto==1.2.5
 uv
 uvloop
 xattr

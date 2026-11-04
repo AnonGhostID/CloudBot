@@ -13,12 +13,14 @@ from bot import LOGGER, bot, config_dict
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import editMessage, sendMessage
+from bot.helper.telegram_helper.download_paths import download_path, media_filename
 from bot.helper.ext_utils.bot_utils import cmd_exec
 from bot.helper.ext_utils.telegraph_helper import telegraph
 
 
 async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     temp_send = await sendMessage(message, '<i>Generating MediaInfo...</i>')
+    des_path = None
     try:
         path = "Mediainfo/"
         if not await aiopath.isdir(path):
@@ -34,7 +36,7 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
                             await f.write(chunk)
                             break
         elif media:
-            des_path = ospath.join(path, media.file_name)
+            des_path = download_path(path, media_filename(mmsg))
             if media.file_size <= 50000000:
                 await mmsg.download(ospath.join(getcwd(), des_path))
             else:
@@ -48,8 +50,10 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     except Exception as e:
         LOGGER.error(e)
         await editMessage(temp_send, f"MediaInfo Stopped due to {str(e)}")
+        return
     finally:
-        await aioremove(des_path)
+        if des_path and await aiopath.exists(des_path):
+            await aioremove(des_path)
     link_id = (await telegraph.create_page(title='MediaInfo X', content=tc))["path"]
     await temp_send.edit(f"<b>MediaInfo:</b>\n\n➲ <b>Link :</b> https://graph.org/{link_id}", disable_web_page_preview=False)
 

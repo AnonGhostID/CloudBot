@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pyrogram import Client as tgClient, enums, utils as pyroutils
 from pymongo import MongoClient
 from asyncio import Lock, new_event_loop, set_event_loop
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv, dotenv_values, set_key
 from threading import Thread
 from time import sleep, time
 from subprocess import Popen, run as srun
@@ -17,6 +17,7 @@ from qbittorrentapi import Client as qbClient
 from socket import setdefaulttimeout
 from logging import getLogger, Formatter, FileHandler, StreamHandler, INFO, ERROR, basicConfig, error as log_error, info as log_info, warning as log_warning
 from uvloop import install
+from bot.helper.ext_utils.upload_hosts import resolve_upload_host
 
 #from faulthandler import enable as faulthandler_enable
 #faulthandler_enable()
@@ -40,6 +41,8 @@ getLogger("httpx").setLevel(ERROR)
 
 LOGGER = getLogger(__name__)
 
+if dotenv_values('config.env').get('DEFAULT_UPLOAD') == 'ddl':
+    set_key('config.env', 'DEFAULT_UPLOAD', 'hosts')
 load_dotenv('config.env', override=True)
 
 Interval = []
@@ -103,6 +106,9 @@ if DATABASE_URL:
         del config_dict['_id']
         for key, value in config_dict.items():
             environ[key] = str(value)
+    db.settings.config.update_one(
+        {'_id': bot_id, 'DEFAULT_UPLOAD': 'ddl'},
+        {'$set': {'DEFAULT_UPLOAD': 'hosts'}})
     if pf_dict := db.settings.files.find_one({'_id': bot_id}):
         del pf_dict['_id']
         for key, value in pf_dict.items():
@@ -164,7 +170,11 @@ if len(RCLONE_FLAGS) == 0:
     RCLONE_FLAGS = ''
 
 DEFAULT_UPLOAD = environ.get('DEFAULT_UPLOAD', '')
-if DEFAULT_UPLOAD != 'rc' and DEFAULT_UPLOAD != 'ddl':
+if DEFAULT_UPLOAD == 'ddl':
+    DEFAULT_UPLOAD = environ['DEFAULT_UPLOAD'] = 'hosts'
+elif resolve_upload_host(DEFAULT_UPLOAD) is not None:
+    DEFAULT_UPLOAD = DEFAULT_UPLOAD.casefold()
+elif DEFAULT_UPLOAD not in ('gd', 'rc', 'hosts'):
     DEFAULT_UPLOAD = 'gd'
 
 DOWNLOAD_DIR = environ.get('DOWNLOAD_DIR', '')

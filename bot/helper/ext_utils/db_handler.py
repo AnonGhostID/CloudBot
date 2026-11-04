@@ -35,6 +35,19 @@ class DbManger:
         if await self.__db.settings.qbittorrent.find_one({'_id': bot_id}) is None:
             await self.__db.settings.qbittorrent.update_one({'_id': bot_id}, {'$set': qbit_options}, upsert=True)
         # User Data
+        try:
+            await self.__db.users[bot_id].update_many(
+                {'ddl_servers': {'$exists': True}},
+                [
+                    {'$set': {'upload_hosts': {'$mergeObjects': [
+                        {'$ifNull': ['$ddl_servers', {}]},
+                        {'$ifNull': ['$upload_hosts', {}]},
+                    ]}}},
+                    {'$unset': 'ddl_servers'},
+                ],
+            )
+        except PyMongoError:
+            raise RuntimeError('Unable to migrate Upload Hosts settings in the database.') from None
         if await self.__db.users[bot_id].find_one():
             rows = self.__db.users[bot_id].find({})
             # return a dict ==> {_id, is_sudo, is_auth, as_doc, thumb, yt_opt, media_group, equal_splits, split_size, rclone}

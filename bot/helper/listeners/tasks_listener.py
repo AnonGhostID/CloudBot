@@ -17,6 +17,7 @@ from bot import OWNER_ID, Interval, aria2, DOWNLOAD_DIR, download_dict, download
     MAX_SPLIT_SIZE, config_dict, status_reply_dict_lock, user_data, non_queued_up, non_queued_dl, queued_up, \
     queued_dl, queue_dict_lock, bot, GLOBAL_EXTENSION_FILTER
 from bot.helper.ext_utils.bot_utils import extra_btns, sync_to_async, get_readable_file_size, get_readable_time, is_gdrive_link
+from bot.helper.ext_utils.upload_hosts import resolve_upload_host
 from bot.helper.ext_utils.fs_utils import get_base_name, get_path_size, clean_download, clean_target, \
     is_first_archive_split, is_archive, is_archive_split, join_files
 from bot.helper.ext_utils.leech_utils import split_file, format_filename
@@ -27,12 +28,12 @@ from bot.helper.mirror_utils.status_utils.zip_status import ZipStatus
 from bot.helper.mirror_utils.status_utils.split_status import SplitStatus
 from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
 from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
-from bot.helper.mirror_utils.status_utils.ddl_status import DDLStatus
+from bot.helper.mirror_utils.status_utils.host_upload_status import HostUploadStatus
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.mirror_utils.upload_utils.pyrogramEngine import TgUploader
-from bot.helper.mirror_utils.upload_utils.ddlEngine import DDLUploader
+from bot.helper.mirror_utils.upload_utils.host_uploader import HostUploader
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.telegram_helper.message_utils import sendCustomMsg, sendMessage, editMessage, deleteMessage, delete_all_messages, delete_links, sendMultiMessage, update_all_messages
 from bot.helper.telegram_helper.button_build import ButtonMaker
@@ -101,7 +102,7 @@ class MirrorLeechListener:
             pass
 
     def __setModeEng(self):
-        mode = f" #{'Leech' if self.isLeech else 'Clone' if self.isClone else 'RClone' if self.upPath not in ['gd', 'ddl'] else 'DDL' if self.upPath != 'gd' else 'GDrive'}"
+        mode = f" #{'Leech' if self.isLeech else 'Clone' if self.isClone else 'GDrive' if self.upPath == 'gd' else 'UploadHosts' if self.upPath == 'hosts' or resolve_upload_host(self.upPath) is not None else 'RClone'}"
         mode += ' (Zip)' if self.compress else ' (Unzip)' if self.extract else ''
         mode += f" | #{'qBit' if self.isQbit else 'ytdlp' if self.isYtdlp else 'GDrive' if (self.isClone or self.isGdrive) else 'Aria2' if self.source_url and self.source_url != self.message.link else 'Tg'}"
         self.upload_details['mode'] = mode
@@ -395,15 +396,15 @@ class MirrorLeechListener:
             await update_all_messages()
 
             await sync_to_async(drive.upload, up_name, size, self.drive_id)
-        elif self.upPath == 'ddl':
+        elif self.upPath == 'hosts' or resolve_upload_host(self.upPath) is not None:
             size = await get_path_size(up_path)
-            LOGGER.info(f"Upload Name: {up_name} via DDL")
-            ddl = DDLUploader(self, up_name, up_dir)
-            ddl_upload_status = DDLStatus(ddl, size, self.message, gid, self.upload_details)
+            LOGGER.info(f"Upload Name: {up_name} via Upload Hosts")
+            host_uploader = HostUploader(self, up_name, up_dir, host=resolve_upload_host(self.upPath))
+            host_upload_status = HostUploadStatus(host_uploader, size, self.message, gid, self.upload_details)
             async with download_dict_lock:
-                download_dict[self.uid] = ddl_upload_status
+                download_dict[self.uid] = host_upload_status
             await update_all_messages()
-            await ddl.upload(up_name, size)
+            await host_uploader.upload(up_name, size)
         else:
             size = await get_path_size(up_path)
             LOGGER.info(f"Upload Name: {up_name} via RClone")
@@ -498,7 +499,7 @@ class MirrorLeechListener:
                 msg += BotTheme('M_SUBFOLD', Folder=folders)
                 msg += BotTheme('TOTAL_FILES', Files=files)
             if link or rclonePath and config_dict['RCLONE_SERVE_URL'] and not private:
-                if (is_DDL := isinstance(link, dict)):
+                if (is_host_upload := isinstance(link, dict)):
                     for dlup, dlink in link.items():
                         if dlink:  # Add this check
                             # Clean and validate URL
@@ -525,7 +526,7 @@ class MirrorLeechListener:
                     if mime_type == "Folder":
                         share_url += '/'
                     buttons.ubutton(BotTheme('RCLONE_LINK'), share_url)
-                elif not rclonePath and not is_DDL:
+                elif not rclonePath and not is_host_upload:
                     INDEX_URL = self.index_link if self.drive_id else config_dict['INDEX_URL']
                     if INDEX_URL:
                         url_path = rutils.quote(f'{name}')

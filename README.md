@@ -68,13 +68,12 @@ Telegram replies, status messages, and media groups use Kurigram's reply and lin
         
     </details></li>
     <li><details>
-      <summary><b>DDL Upload</b></summary>
+      <summary><b>Upload Hosts</b></summary>
 
     - Upload Files/Folder in the Supported Sites
-      - Gofile.io
-      - Streamtape.com
-    - Upload on multiple sites at a time
-    - User api/key is need for the upload        
+      - GoFile, StreamTape, PixelDrain, BuzzHeavier and Ranoz
+    - Upload to enabled hosts or select one host per task
+    - Explicit host selections require saved credentials; StreamTape requires a saved login and API key
     </details></li>
     <li><details>
       <summary><b>Google Drive</b></summary>
@@ -454,7 +453,7 @@ help - All cmds with description
     - `SUDO_USERS`: Fill user_id of users whom you want to give sudo permission. Separate them by space. `Int`
     - `BLACKLIST_USERS` : Fill user_id of users you wish to prohibit from using the bot. Separate them by space. `Int`
     - `STATUS_LIMIT`: Limit the no. of tasks shown in status message with buttons. Default is `10`. **NOTE**: Recommended limit is `4` tasks. `Int`
-    - `DEFAULT_UPLOAD`: Whether `rc` to upload to `RCLONE_PATH` or `gd` to upload to `GDRIVE_ID` or `ddl` to upload to `DDL`. Default is `gd`. Read More [HERE](https://github.com/weebzone/WZML-X/tree/master#upload).`Str`
+    - `DEFAULT_UPLOAD`: `rc` uploads to `RCLONE_PATH`, `gd` to `GDRIVE_ID`, `hosts` to enabled Upload Hosts, or `gf`, `bh`, `pd`, `rnz`, `stp` to one host. Default is `gd`. `Str`
     - `STATUS_UPDATE_INTERVAL`: Time in seconds after which the progress/status message will be updated. Recommended `10` seconds at least. `Int`
     - `AUTO_DELETE_MESSAGE_DURATION`: Interval of time (in seconds), after which the bot deletes it's message and command message which is expected to be viewed instantly. **NOTE**: Set to `-1` to disable auto message deletion. `Int`
     - `INCOMPLETE_TASK_NOTIFIER`: Get incomplete task messages after restart. Require database and superGroup. Default is `False`. `Bool`
@@ -707,11 +706,14 @@ python3 generate_drive_token.py
 - `RCLONE_PATH` is like `GDRIVE_ID` a default path for mirror. In additional to those variables `DEFAULT_UPLOAD` to choose the default tool whether it's rclone or google-api-python-client.
 - If `DEFAULT_UPLOAD` = 'rc' then you must fill `RCLONE_PATH` with path as default one or with `rcl` to select destination path on each new task.
 - If `DEFAULT_UPLOAD` = 'gd' then you must fill `GDRIVE_ID` with folder/TD id.
-- If `DEFAULT_UPLOAD` = 'ddl' then it will upload to User Specific Enabled DDL Servers, Without further complicating, just enable in usetting
+- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, `rnz`, or `stp`) selects that host only.
+- Existing `DEFAULT_UPLOAD=ddl` settings are migrated to `hosts`. If the value comes from an external environment, change it there to `hosts`.
 - `rclone.conf` can be added before deploy like `token.pickle` to repo folder root or use bsetting to upload it as private file.
 - If rclone.conf uploaded from usetting or added in `rclone/{user_id}.conf` then `RCLONE_PATH` must start with `mrcc:`.
 - Whenever you want to write path manually to use user rclone.conf that added from usetting then you must add the `mrcc:` at the beginning.
-- So in short, -up has 5 possible values which are: gd(Upload to GDRIVE_ID), rc(Upload to RCLONE_PATH), ddl(Upload to User's Enabled DDL Servers), rcl(Select Rclone Path) and rclone_path(remote:path(owner rclone.conf) or mrcc:remote:path(user rclone.conf))
+- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up rnz` for Ranoz, or `-up stp` for StreamTape. Codes are case-insensitive and select only that host, even if its toggle is disabled. Each explicit selection requires saved credentials before downloading; StreamTape requires a saved `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- PixelDrain uploads accept its HTTP 201 file-info response even when the `success` field is absent; a file ID is still required.
+- Other `-up` destinations are `gd` (GDRIVE_ID), `rc` (RCLONE_PATH), `rcl` (select an Rclone path), and `remote:path` or `mrcc:remote:path` for owner or user Rclone configurations.
 
 </details>
     

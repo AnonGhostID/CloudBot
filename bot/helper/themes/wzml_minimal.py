@@ -6,7 +6,7 @@ class WZMLStyle:
     ST_BN1_URL = 'https://www.github.com/weebzone/WZML-X'
     ST_BN2_NAME = 'Updates'
     ST_BN2_URL = 'https://t.me/WZML_X'
-    ST_MSG = '''<i>This bot can mirror all your links|files|torrents to Google Drive or any rclone cloud or to telegram or to ddl servers.</i>
+    ST_MSG = '''<i>This bot can mirror all your links|files|torrents to Google Drive or any rclone cloud or to telegram or to upload servers.</i>
 <b>Type {help_command} to get a list of available commands</b>'''
     ST_BOTPM = '''<i>Now, This bot will send all your files and links here. Start Using ...</i>'''
     ST_UNAUTH = '''<i>You Are not authorized user! Deploy your own WZML-X Mirror-Leech bot</i>'''
@@ -159,7 +159,6 @@ class WZMLStyle:
     CLOUD_LINK =      '☁️ Cloud Link'
     SAVE_MSG =        '📨 Save Message'
     RCLONE_LINK =     '♻️ RClone Link'
-    DDL_LINK =        '{Serv} Link'
     SOURCE_URL =      '🔐 Source Link'
     INDEX_LINK_F =    '🗂 Index Link'
     INDEX_LINK_D =    '⚡ Index Link'
@@ -277,7 +276,7 @@ class WZMLStyle:
 ┠<b> Mirror Prefix :</b> <code>{MPREFIX}</code>
 ┠<b> Mirror Suffix :</b> <code>{MSUFFIX}</code>
 ┠<b> Mirror Remname :</b> <code>{MREMNAME}</code>
-┠<b> DDL Server(s) :</b> <i>{DDL_SERVER}</i>
+┠<b> Upload Hosts :</b> <i>{UPLOAD_HOSTS}</i>
 ┠<b> User TD Mode :</b> <i>{TMODE}</i>
 ┠<b> Total User TD(s) :</b> <i>{USERTD}</i>
 ┖<b> Daily Mirror :</b> <code>{DM}</code> per day'''

@@ -14,6 +14,7 @@ from bot import bot, DOWNLOAD_DIR, LOGGER, config_dict, bot_name, categories_dic
 from bot.helper.mirror_utils.download_utils.direct_downloader import add_direct_download
 from bot.helper.ext_utils.bot_utils import is_url, is_magnet, is_gdrive_link, get_content_type, new_task, sync_to_async, is_rclone_path, is_telegram_link, arg_parser, fetch_user_tds, fetch_user_dumps, get_stats
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
+from bot.helper.ext_utils.upload_hosts import resolve_upload_host, upload_host_credential_error
 from bot.helper.ext_utils.task_manager import task_utils
 from bot.helper.mirror_utils.download_utils.aria2_download import add_aria2c_download
 from bot.helper.mirror_utils.download_utils.gd_download import add_gd_download
@@ -77,6 +78,15 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
     extract       = args['-e'] or args['-extract'] or args['-uz'] or args['-unzip'] or 'uz' in cmd or 'unzip' in cmd
     compress      = args['-z'] or args['-zip'] or (not extract and ('z' in cmd or 'zip' in cmd))
     up            = args['-up'] or args['-upload']
+    if not isLeech and isinstance(up, str):
+        if up.casefold() in ('ddl', 'hosts'):
+            await sendMessage(message, 'Choose one upload host: -up gf, -up bh, -up pd, -up rnz or -up stp.')
+            return
+        if (host := resolve_upload_host(up)) is not None:
+            if error := upload_host_credential_error(host, user_data.get(message.from_user.id, {})):
+                await sendMessage(message, error)
+                return
+            up = up.casefold()
     rcf           = args['-rcf']
     drive_id      = args['-id']
     index_link    = args['-index']
@@ -267,8 +277,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
     if not isLeech:
         if config_dict['DEFAULT_UPLOAD'] == 'rc' and not up or up == 'rc':
             up = config_dict['RCLONE_PATH']
-        elif config_dict['DEFAULT_UPLOAD'] == 'ddl' and not up or up == 'ddl':
-            up = 'ddl'
+        elif not up and (config_dict['DEFAULT_UPLOAD'] == 'hosts' or resolve_upload_host(config_dict['DEFAULT_UPLOAD']) is not None):
+            up = config_dict['DEFAULT_UPLOAD']
         if not up and config_dict['DEFAULT_UPLOAD'] == 'gd':
             up = 'gd'
             user_tds = await fetch_user_tds(message.from_user.id)
@@ -291,7 +301,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             await sendMessage(message, 'No RClone Destination!')
             await delete_links(message)
             return
-        elif up not in ['rcl', 'gd', 'ddl']:
+        elif up not in ['rcl', 'gd', 'hosts'] and resolve_upload_host(up) is None:
             if up.startswith('mrcc:'):
                 config_path = f'rclone/{message.from_user.id}.conf'
             else:
@@ -300,7 +310,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
                 await sendMessage(message, f"RClone Config: {config_path} not Exists!")
                 await delete_links(message)
                 return
-        if up != 'gd' and up != 'ddl' and not is_rclone_path(up):
+        if up not in ('gd', 'hosts') and resolve_upload_host(up) is None and not is_rclone_path(up):
             await sendMessage(message, 'Wrong Rclone Upload Destination!')
             await delete_links(message)
             return

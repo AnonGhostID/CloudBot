@@ -11,6 +11,7 @@ from time import time
 
 from bot import DOWNLOAD_DIR, bot, categories_dict, config_dict, user_data, LOGGER
 from bot.helper.ext_utils.task_manager import task_utils
+from bot.helper.ext_utils.upload_hosts import resolve_upload_host, upload_host_credential_error
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, auto_delete_message, delete_links, open_category_btns, open_dump_btns
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import get_readable_file_size, fetch_user_tds, fetch_user_dumps, is_url, is_gdrive_link, new_task, sync_to_async, new_task, is_rclone_path, new_thread, get_readable_time, arg_parser
@@ -277,6 +278,15 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
     folder_name = args['-m'] or args['-sd'] or args['-samedir']
     name        = args['-n'] or args['-name']
     up          = args['-up'] or args['-upload']
+    if not isLeech and isinstance(up, str):
+        if up.casefold() in ('ddl', 'hosts'):
+            await sendMessage(message, 'Choose one upload host: -up gf, -up bh, -up pd, -up rnz or -up stp.')
+            return
+        if (host := resolve_upload_host(up)) is not None:
+            if error := upload_host_credential_error(host, user_data.get(message.from_user.id, {})):
+                await sendMessage(message, error)
+                return
+            up = up.casefold()
     rcf         = args['-rcf']
     link        = args['link']
     compress    = args['-z'] or args['-zip'] or 'z' in cmd or 'zip' in cmd
@@ -404,8 +414,8 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
     if not isLeech:
         if config_dict['DEFAULT_UPLOAD'] == 'rc' and not up or up == 'rc':
             up = config_dict['RCLONE_PATH']
-        elif config_dict['DEFAULT_UPLOAD'] == 'ddl' and not up or up == 'ddl':
-            up = 'ddl'
+        elif not up and (config_dict['DEFAULT_UPLOAD'] == 'hosts' or resolve_upload_host(config_dict['DEFAULT_UPLOAD']) is not None):
+            up = config_dict['DEFAULT_UPLOAD']
         if not up and config_dict['DEFAULT_UPLOAD'] == 'gd':
             up = 'gd'
             user_tds = await fetch_user_tds(message.from_user.id)
@@ -432,7 +442,7 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
             await sendMessage(message, 'No Rclone Destination!')
             await delete_links(message)
             return
-        elif up not in ['rcl', 'gd', 'ddl']:
+        elif up not in ['rcl', 'gd', 'hosts'] and resolve_upload_host(up) is None:
             if up.startswith('mrcc:'):
                 config_path = f'rclone/{message.from_user.id}.conf'
             else:
@@ -441,7 +451,7 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
                 await sendMessage(message, f'Rclone Config: {config_path} not Exists!')
                 await delete_links(message)
                 return
-        if up != 'gd' and up != 'ddl' and not is_rclone_path(up):
+        if up not in ('gd', 'hosts') and resolve_upload_host(up) is None and not is_rclone_path(up):
             await sendMessage(message, 'Wrong Rclone Upload Destination!')
             await delete_links(message)
             return

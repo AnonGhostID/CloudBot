@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from bot.helper.telegram_helper.bot_commands import BotCommands
 
-YT_HELP_MESSAGE = ["""<i>Send links/files along with cmd or reply to cmd to mirror or leech ytdl supported stes on Telegram or GDrive or DDLs with different Engines like RClone or yt-dlp</i>
+YT_HELP_MESSAGE = ["""<i>Send links/files along with cmd or reply to cmd to mirror or leech ytdl supported stes on Telegram, GDrive, or Upload Hosts with different Engines like RClone or yt-dlp</i>
 
 ➲ <b><u>Available Args</u></b>:
 
 1.  <b>-n or -name :</b> Rename file.
 2.  <b>-z or -zip :</b> Zip files or Links
-3.  <b>-up or -upload :</b> Upload to your Drive or RClone or DDL
+3.  <b>-up or -upload :</b> Upload to your Drive, RClone, or an Upload Host
 4.  <b>-b or -bulk :</b> Download bulk links.
 5.  <b>-i :</b> Download multi links by reply
 6.  <b>-m or -sd or -samedir :</b> Download multi links within same upload directory.
@@ -76,12 +76,18 @@ Make Sure Bot is already Admin else it will not accept.
 
 ➲ <b><i>Upload</i></b>: -up or -upload
 <code>/cmd</code> link -up <code>rcl</code> (To select rclone config, remote and path)
-<code>/cmd</code> link -up <code>ddl</code>
+<code>/cmd</code> link -up <code>gf</code> (GoFile)
+<code>/cmd</code> link -up <code>bh</code> (BuzzHeavier)
+<code>/cmd</code> link -up <code>pd</code> (PixelDrain)
+<code>/cmd</code> link -up <code>rnz</code> (Ranoz)
+<code>/cmd</code> link -up <code>stp</code> (StreamTape)
+Host codes are case-insensitive and select only that host, even if it is disabled in settings. Each explicit host selection requires saved credentials before downloading; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+With no -up, DEFAULT_UPLOAD=hosts uploads to enabled hosts; a host code selects that host only.
 You can directly add the upload path: -up remote:dir/subdir
 
 If DEFAULT_UPLOAD is `rc` then you can pass up: `gd` to upload using gdrive tools to GDRIVE_ID.
 If DEFAULT_UPLOAD is `gd` then you can pass up: `rc` to upload to RCLONE_PATH.
-If DEFAULT_UPLOAD is `ddl` then you can pass up: `rc` or `gd` to upload to RCLONE_PATH or GDRIVE_ID
+If DEFAULT_UPLOAD is `hosts` or a host code then you can pass up: `rc` or `gd` to upload to RCLONE_PATH or GDRIVE_ID
 If you want to add path manually from your config (uploaded from usetting) add <code>mrcc:</code> before the path without space
 <code>/cmd</code> link -up <code>mrcc:</code>main:dump
 
@@ -108,14 +114,14 @@ You can set start and end of the links from the bulk with -b start:end or only e
 Only safe yt-dlp API options are accepted. Lists, tuples and dictionaries must be Python literals, not expressions. Commands, custom postprocessors and executable or filesystem paths are not allowed.
 """]
 
-MIRROR_HELP_MESSAGE = ["""<i>Send links/files along with cmd or reply to cmd to mirror or leech on Telegram or GDrive or DDLs with different Engines like RClone, Aria2 or qBit</i>
+MIRROR_HELP_MESSAGE = ["""<i>Send links/files along with cmd or reply to cmd to mirror or leech on Telegram, GDrive, or Upload Hosts with different Engines like RClone, Aria2 or qBit</i>
 
 ➲ <b><u>Available Args</u></b>:
 
 1.  <b>-n or -name :</b> Rename file.
 2.  <b>-z or -zip :</b> Zip files or Links
 3.  <b>-e or -extract or -uz or -unzip :</b> Extract/Unzip files from Archive
-4.  <b>-up or -upload :</b> Upload to your Drive or RClone or DDL
+4.  <b>-up or -upload :</b> Upload to your Drive, RClone, or an Upload Host
 6.  <b>-b or -bulk :</b> Download bulk links.
 7.  <b>-i :</b> Download multi links by reply
 9.  <b>-m or -sd or -samedir :</b> Download multi links within same upload directory.
@@ -194,12 +200,18 @@ Make Sure Bot is already Admin else it will not accept.
 
 ➲ <b><i>Custom Upload</i></b>: -up or -upload
 <code>/cmd</code> link -up <code>rcl</code> (To select rclone config, remote and path)
-<code>/cmd</code> link -up <code>ddl</code>
+<code>/cmd</code> link -up <code>gf</code> (GoFile)
+<code>/cmd</code> link -up <code>bh</code> (BuzzHeavier)
+<code>/cmd</code> link -up <code>pd</code> (PixelDrain)
+<code>/cmd</code> link -up <code>rnz</code> (Ranoz)
+<code>/cmd</code> link -up <code>stp</code> (StreamTape)
+Host codes are case-insensitive and select only that host, even if it is disabled in settings. Each explicit host selection requires saved credentials before downloading; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+With no -up, DEFAULT_UPLOAD=hosts uploads to enabled hosts; a host code selects that host only.
 You can directly add the upload path: -up remote:dir/subdir
 
 If DEFAULT_UPLOAD is `rc` then you can pass up: `gd` to upload using gdrive tools to GDRIVE_ID.
 If DEFAULT_UPLOAD is `gd` then you can pass up: `rc` to upload to RCLONE_PATH.
-If DEFAULT_UPLOAD is `ddl` then you can pass up: `rc` or `gd` to upload to RCLONE_PATH or GDRIVE_ID
+If DEFAULT_UPLOAD is `hosts` or a host code then you can pass up: `rc` or `gd` to upload to RCLONE_PATH or GDRIVE_ID
 If you want to add path manually from your config (uploaded from usetting) add <code>mrcc:</code> before the path without space
 <code>/cmd</code> link -up <code>mrcc:</code>main:dump
 
@@ -278,7 +290,7 @@ CLONE_HELP_MESSAGE = ["""<i>Send Gdrive | Gdtot | Filepress | Filebee | Appdrive
 
 ➲ <b><u>Available Args</u></b>:
 
-1. <b>-up or -upload :</b> Upload to your Drive or RClone or DDL
+1. <b>-up or -upload :</b> Upload to your Drive or RClone
 2. <b>-i :</b> Download multi links by reply
 3. <b>-rcf :</b> RClone additional Flags
 4. <b>-id :</b> GDrive Folder id or link
@@ -470,7 +482,7 @@ default_desp = {'AS_DOCUMENT': 'Default type of Telegram file upload. Default is
                 'BOT_TOKEN': 'The Telegram Bot Token that you got from @BotFather',
                 'CMD_SUFFIX': 'Telegram Bot Command Index number or Custom Text. This will added at the end all commands except Global Commands. Str',
                 'DATABASE_URL': "Your Mongo Database URL (Connection string). Follow this Generate Database to generate database. Data will be saved in Database: auth and sudo users, users settings including thumbnails for each user, rss data and incomplete tasks.\n\n <b>NOTE:</b> You can always edit all settings that saved in database from the official site -> (Browse collections)",
-                'DEFAULT_UPLOAD': 'Whether rc to upload to RCLONE_PATH or gd to upload to GDRIVE_ID or ddl to upload to DDLserver. Default is gd.',
+                'DEFAULT_UPLOAD': 'Upload destination: gd (GDRIVE_ID), rc (RCLONE_PATH), hosts (enabled Upload Hosts), or one host code: gf, bh, pd, rnz, stp. Default is gd.',
                 'DOWNLOAD_DIR': 'The path to the local folder where the downloads should be downloaded to. ',
                 'MDL_TEMPLATE': 'Set Bot Custom Default MyDramaList Template. HTML Tags, Emojis Supported',
                 'CLEAN_LOG_MSG': 'Clean Leech Log & Bot PM Task Start Message. Default is False',

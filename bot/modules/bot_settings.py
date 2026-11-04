@@ -22,6 +22,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async, new_thread
 from bot.helper.ext_utils.db_handler import DbManger
+from bot.helper.ext_utils.upload_hosts import resolve_upload_host
 from bot.helper.ext_utils.task_manager import start_from_queued
 from bot.helper.ext_utils.help_messages import default_desp
 from bot.helper.mirror_utils.rclone_utils.serve import rclone_serve_booter
@@ -94,7 +95,11 @@ async def load_config():
         RCLONE_PATH = ''
 
     DEFAULT_UPLOAD = environ.get('DEFAULT_UPLOAD', '')
-    if DEFAULT_UPLOAD != 'rc' and DEFAULT_UPLOAD != 'ddl':
+    if DEFAULT_UPLOAD == 'ddl':
+        DEFAULT_UPLOAD = environ['DEFAULT_UPLOAD'] = 'hosts'
+    elif resolve_upload_host(DEFAULT_UPLOAD) is not None:
+        DEFAULT_UPLOAD = DEFAULT_UPLOAD.casefold()
+    elif DEFAULT_UPLOAD not in ('gd', 'rc', 'hosts'):
         DEFAULT_UPLOAD = 'gd'
 
     RCLONE_FLAGS = environ.get('RCLONE_FLAGS', '')

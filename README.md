@@ -33,6 +33,8 @@
 - Select files from Torrent before and while downloading
 - Seed torrents to specific ratio and time
 - Edit Global Options while bot running from bot settings
+- In Qbit Settings, setting a global ratio or seeding-time limit to a non-negative value enables it; `-1` disables it.
+- A queued magnet with file selection waits for its queue slot and metadata before showing the selector.
 
     </details></li>
     <li><details>
@@ -206,7 +208,11 @@
 - Extract these filetypes
   > ZIP, RAR, TAR, 7z, ISO, WIM, CAB, GZIP, BZIP2, APM, ARJ, CHM, CPIO, CramFS, DEB, DMG, FAT, HFS, LZH, LZMA, LZMA2, MBR, MSI, MSLZ, NSIS, NTFS, RPM, SquashFS, UDF, VHD, XAR, Z, TAR.XZ
 - Direct links Supported:
-  > mediafire(folder), letsupload.io, streamtape.com, upload.ee, pixeldrain.com, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
+  > mediafire(folder), letsupload.io, streamtape.com, upload.ee, pixeldrain.com, pixeldra.in, buzzheavier.com, hxfile.co, filepress, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
+
+  HXFile requires Netscape-format cookies in `hxfile.txt` in the bot's working directory. Upload it through the bot's private-file settings or mount it into the container.
+
+  Transfer.it links (`https://transfer.it/t/...`) support files and folders. For password-protected transfers, append `::password` to the URL or pass the password with `-p`.
 
 </details>
 

@@ -152,11 +152,11 @@ async def __qb_listener():
                     elif state == "error":
                         __onDownloadError(
                             "No enough space for this torrent on device", tor_info)
-                    elif tor_info.completion_on != 0 and not QbTorrents[tag]['uploaded'] and \
+                    elif tor_info.completion_on > 0 and not QbTorrents[tag]['uploaded'] and \
                             state not in ['checkingUP', 'checkingDL', 'checkingResumeData']:
                         QbTorrents[tag]['uploaded'] = True
                         __onDownloadComplete(tor_info)
-                    elif state in ['pausedUP', 'pausedDL'] and QbTorrents[tag]['seeding']:
+                    elif state in ['pausedUP', 'pausedDL', 'stoppedUP', 'stoppedDL'] and QbTorrents[tag]['seeding']:
                         QbTorrents[tag]['seeding'] = False
                         __onSeedFinish(tor_info)
             except Exception as e:

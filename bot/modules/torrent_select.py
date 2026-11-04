@@ -95,7 +95,7 @@ async def get_confirm(client, query):
         id_ = data[3]
         if len(id_) > 20:
             client = dl.client()
-            tor_info = (await sync_to_async(client.torrents_info, torrent_hash=id_))[0]
+            tor_info = (await sync_to_async(client.torrents_info, torrent_hashes=id_))[0]
             path = tor_info.content_path.rsplit('/', 1)[0]
             res = await sync_to_async(client.torrents_files, torrent_hash=id_)
             for f in res:

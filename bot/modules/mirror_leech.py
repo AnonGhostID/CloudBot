@@ -4,6 +4,7 @@ from html import escape
 from traceback import format_exc
 from base64 import b64encode
 from re import match as re_match
+from urllib.parse import urlparse
 from asyncio import sleep, wrap_future
 from aiofiles import open as aiopen
 from aiofiles.os import path as aiopath
@@ -244,6 +245,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
                 if not is_magnet(link) and (ussr or pssw):
                     link = (link, (ussr, pssw))
                 link = await sync_to_async(direct_link_generator, link)
+                if urlparse(org_link).hostname in ('transfer.it', 'www.transfer.it'):
+                    ussr = pssw = None
                 if isinstance(link, tuple):
                     link, headers = link
                 elif isinstance(link, str):

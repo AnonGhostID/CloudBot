@@ -58,7 +58,7 @@ class QbittorrentStatus:
             return MirrorStatus.STATUS_QUEUEDL
         elif state == "queuedUP":
             return MirrorStatus.STATUS_QUEUEUP
-        elif state in ["pausedDL", "pausedUP"]:
+        elif state in ["pausedDL", "pausedUP", "stoppedDL", "stoppedUP"]:
             return MirrorStatus.STATUS_PAUSED
         elif state in ["checkingUP", "checkingDL"]:
             return MirrorStatus.STATUS_CHECKING

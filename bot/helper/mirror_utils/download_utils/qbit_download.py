@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from time import time
+from asyncio import sleep
 from aiofiles.os import remove as aioremove, path as aiopath
 
 from bot import download_dict, download_dict_lock, get_client, LOGGER, config_dict, non_queued_dl, queue_dict_lock
@@ -75,8 +76,24 @@ async def add_qb_torrent(link, path, listener, ratio, seed_time):
 
         await listener.onDownloadStart()
 
+        async def start_queued():
+            await event.wait()
+            async with download_dict_lock:
+                if listener.uid not in download_dict:
+                    return False
+                download_dict[listener.uid].queued = False
+            await sync_to_async(client.torrents_resume, torrent_hashes=ext_hash)
+            LOGGER.info(f'Start Queued Download from Qbittorrent: {tor_info.name} - Hash: {ext_hash}')
+            async with queue_dict_lock:
+                non_queued_dl.add(listener.uid)
+            return True
+
         if config_dict['BASE_URL'] and listener.select:
             if link.startswith('magnet:'):
+                if added_to_queue:
+                    if not await start_queued():
+                        return
+                    added_to_queue = False
                 metamsg = "Downloading Metadata, wait then you can select files. Use torrent file to avoid this wait."
                 meta = await sendMessage(listener.message, metamsg)
                 while True:
@@ -86,12 +103,13 @@ async def add_qb_torrent(link, path, listener, ratio, seed_time):
                         return
                     try:
                         tor_info = tor_info[0]
-                        if tor_info.state not in ["metaDL", "checkingResumeData", "pausedDL"]:
+                        if await sync_to_async(client.torrents_files, torrent_hash=ext_hash):
                             await deleteMessage(meta)
                             break
                     except:
                         await deleteMessage(meta)
                         return
+                    await sleep(1)
 
             ext_hash = tor_info.hash
             if not added_to_queue:
@@ -103,19 +121,7 @@ async def add_qb_torrent(link, path, listener, ratio, seed_time):
             await sendStatusMessage(listener.message)
 
         if added_to_queue:
-            await event.wait()
-
-            async with download_dict_lock:
-                if listener.uid not in download_dict:
-                    return
-                download_dict[listener.uid].queued = False
-
-            await sync_to_async(client.torrents_resume, torrent_hashes=ext_hash)
-            LOGGER.info(
-                f'Start Queued Download from Qbittorrent: {tor_info.name} - Hash: {ext_hash}')
-
-            async with queue_dict_lock:
-                non_queued_dl.add(listener.uid)
+            await start_queued()
     except Exception as e:
         await sendMessage(listener.message, str(e))
     finally:

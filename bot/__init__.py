@@ -794,18 +794,19 @@ else:
     aria2.set_global_options(a2c_glo)
 
 qb_client = get_client()
-if not qbit_options:
-    qbit_options = dict(qb_client.app_preferences())
-    del qbit_options['listen_port']
-    for k in list(qbit_options.keys()):
-        if k.startswith('rss'):
-            del qbit_options[k]
-else:
+if qbit_options:
     qb_opt = {**qbit_options}
+    if 'start_paused_enabled' in qb_opt and 'add_stopped_enabled' not in qb_opt:
+        qb_opt['add_stopped_enabled'] = qb_opt.pop('start_paused_enabled')
     for k, v in list(qb_opt.items()):
         if v in ["", "*"]:
             del qb_opt[k]
     qb_client.app_set_preferences(qb_opt)
+qbit_options = dict(qb_client.app_preferences())
+qbit_options.pop('listen_port', None)
+for k in list(qbit_options):
+    if k.startswith('rss'):
+        del qbit_options[k]
 
 log_info("Creating client from BOT_TOKEN")
 bot = wztgClient('bot', TELEGRAM_API, TELEGRAM_HASH, bot_token=BOT_TOKEN, workers=1000,

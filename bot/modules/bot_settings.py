@@ -901,14 +901,28 @@ async def edit_qbit(_, message, pre_message, key):
         value = False
     elif key == 'max_ratio':
         value = float(value)
-    elif value.isdigit():
+    elif value.lstrip('-').isdigit():
         value = int(value)
-    await sync_to_async(get_client().app_set_preferences, {key: value})
-    qbit_options[key] = value
+    updates = {key: value}
+    for limit in ('max_ratio', 'max_seeding_time', 'max_inactive_seeding_time'):
+        if key == limit:
+            updates[f'{limit}_enabled'] = value >= 0
+        elif key == f'{limit}_enabled':
+            if value and qbit_options[limit] < 0:
+                await sendMessage(message, f'Set {limit} to a non-negative value first.')
+                return
+            updates[limit] = qbit_options[limit]
+    client = get_client()
+    await sync_to_async(client.app_set_preferences, updates)
+    if len(updates) > 1:
+        preferences = await sync_to_async(client.app_preferences)
+        updates = {option: preferences[option] for option in updates}
+    qbit_options.update(updates)
     await update_buttons(pre_message, 'qbit')
     await deleteMessage(message)
     if DATABASE_URL:
-        await DbManger().update_qbittorrent(key, value)
+        for option, option_value in updates.items():
+            await DbManger().update_qbittorrent(option, option_value)
 
 
 async def update_private_file(_, message, pre_message):
@@ -1155,7 +1169,7 @@ async def edit_bot_settings(client, query):
     elif data[1] == 'emptyqbit':
         handler_dict[message.chat.id] = False
         await query.answer()
-        await sync_to_async(get_client().app_set_preferences, {data[2]: value})
+        await sync_to_async(get_client().app_set_preferences, {data[2]: ''})
         qbit_options[data[2]] = ''
         await update_buttons(message, 'qbit')
         if DATABASE_URL:
@@ -1221,7 +1235,7 @@ async def edit_bot_settings(client, query):
         await query.answer()
         await update_buttons(message, data[2], data[1])
         pfunc = partial(edit_qbit, pre_message=message, key=data[2])
-        rfunc = partial(update_buttons, message, 'var')
+        rfunc = partial(update_buttons, message, 'qbit')
         await event_handler(client, query, pfunc, rfunc)
     elif data[1] == 'editqbit' and STATE == 'view':
         value = qbit_options[data[2]]

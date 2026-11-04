@@ -51,7 +51,7 @@ class MirrorStatus:
     STATUS_PAUSED      = "Pause"
     STATUS_ARCHIVING   = "Archive"
     STATUS_EXTRACTING  = "Extract"
-    STATUS_SPLITTING   = "Split"
+    STATUS_SPLITTING   = "Splitting File"
     STATUS_CHECKING    = "CheckUp"
     STATUS_SEEDING     = "Seed"
 
@@ -164,18 +164,15 @@ def get_all_versions():
     except FileNotFoundError:
         vr = ''
     try:
-        vpy = version('pyrogram')
+        vkurigram = version('kurigram')
     except PackageNotFoundError:
-        try:
-            vpy = version('pyrofork')
-        except PackageNotFoundError:
-            vpy = "2.xx.xx"
+        vkurigram = "unknown"
     bot_cache['eng_versions'] = {'p7zip':vp, 'ffmpeg': vf, 'rclone': vr,
                                     'aria': aria2.client.get_version()['version'],
                                     'aiohttp': version('aiohttp'),
                                     'gapi': version('google-api-python-client'),
                                     'qbit': get_client().app.version,
-                                    'pyro': vpy,
+                                    'kurigram': vkurigram,
                                     'ytdlp': version('yt-dlp')}
 
 
@@ -188,7 +185,7 @@ class EngineStatus:
         self.STATUS_AIOHTTP = f"AioHttp {version_cache['aiohttp']}"
         self.STATUS_GD = f"Google-API v{version_cache['gapi']}"
         self.STATUS_QB = f"qBit {version_cache['qbit']}"
-        self.STATUS_TG = f"PyroMulti v{version_cache['pyro']}"
+        self.STATUS_TG = f"Kurigram v{version_cache['kurigram']}"
         self.STATUS_YT = f"yt-dlp v{version_cache['ytdlp']}"
         self.STATUS_EXT = "pExtract v2"
         self.STATUS_SPLIT_MERGE = f"ffmpeg v{version_cache['ffmpeg']}"

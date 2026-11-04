@@ -9,6 +9,8 @@
 
 </p>
 
+Telegram replies, status messages, and media groups use Kurigram's reply and link-preview APIs.
+
 <div align=center>
 
 ----
@@ -211,6 +213,8 @@
   > mediafire(folder), letsupload.io, streamtape.com, upload.ee, pixeldrain.com, pixeldra.in, buzzheavier.com, hxfile.co, filepress, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
 
   HXFile requires Netscape-format cookies in `hxfile.txt` in the bot's working directory. Upload it through the bot's private-file settings or mount it into the container.
+
+  MediaFire links may require Cloudflare verification that the bot cannot complete. If so, open the page in a browser and send the direct download URL to the bot; direct URLs may expire.
 
   Transfer.it links (`https://transfer.it/t/...`) support files and folders. For password-protected transfers, append `::password` to the URL or pass the password with `-p`.
 

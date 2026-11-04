@@ -14,6 +14,7 @@ from lxml.etree import HTML
 from requests import Session, session as req_session, post, get, RequestException
 from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin
 from cloudscraper import create_scraper
+from cloudscraper.exceptions import CloudflareException
 from http.cookiejar import MozillaCookieJar
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -421,45 +422,65 @@ def mediafire(url, session=None):
     ):
         return final_link[0]
 
-    def _repair_download(url, session):
+    def _page(method, url, **kwargs):
         try:
-            html = HTML(session.get(url).text)
-            if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
-                return mediafire(f"https://mediafire.com/{new_link[0]}")
+            response = method(url, **kwargs)
+        except CloudflareException as e:
+            session.close()
+            raise DirectDownloadLinkException(
+                "ERROR: MediaFire is blocked by Cloudflare or requires verification. "
+                "Open the link in a browser and send the direct download URL to the bot."
+            ) from e
         except Exception as e:
+            session.close()
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
+        if (response.headers.get('cf-mitigated', '').lower() == 'challenge'
+                or (response.status_code == 403 and ('_cf_chl_' in response.text or 'cf-chl-' in response.text))):
+            session.close()
+            raise DirectDownloadLinkException(
+                "ERROR: MediaFire requires Cloudflare verification, which the bot cannot complete. "
+                "Open the link in a browser and send the direct download URL to the bot."
+            )
+        html = HTML(response.text) if response.text.strip() else HTML('<html></html>')
+        if html is None:
+            html = HTML('<html></html>')
+        if error := html.xpath('//p[@class="notranslate"]/text()'):
+            session.close()
+            raise DirectDownloadLinkException(f"ERROR: {error[0]}")
+        if response.status_code >= 400:
+            session.close()
+            raise DirectDownloadLinkException(
+                f"ERROR: MediaFire returned HTTP {response.status_code}. "
+                "Open the link in a browser to check whether it is accessible."
+            )
+        return html
+
+    def _repair_download(url, session):
+        html = _page(session.get, url)
+        if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
+            return mediafire(f"https://mediafire.com/{new_link[0]}")
 
     if session is None:
         session = create_scraper()
         parsed_url = urlparse(url)
         url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-    try:
-        html = HTML(session.get(url).text)
-    except Exception as e:
-        session.close()
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-    if error := html.xpath('//p[@class="notranslate"]/text()'):
-        session.close()
-        raise DirectDownloadLinkException(f"ERROR: {error[0]}")
+    html = _page(session.get, url)
     if html.xpath("//div[@class='passwordPrompt']"):
         if not _password:
             session.close()
             raise DirectDownloadLinkException(
                 f"ERROR: {PASSWORD_ERROR_MESSAGE}".format(url)
             )
-        try:
-            html = HTML(session.post(url, data={"downloadp": _password}).text)
-        except Exception as e:
-            session.close()
-            raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
+        html = _page(session.post, url, data={"downloadp": _password})
         if html.xpath("//div[@class='passwordPrompt']"):
             session.close()
             raise DirectDownloadLinkException("ERROR: Wrong password.")
     if not (final_link := html.xpath('//a[@aria-label="Download file"]/@href')):
         if repair_link := html.xpath("//a[@class='retry']/@href"):
             return _repair_download(repair_link[0], session)
+        session.close()
         raise DirectDownloadLinkException(
-            "ERROR: No links found in this page Try Again"
+            "ERROR: MediaFire did not provide a download link. Open the link in a browser to check it."
         )
     if final_link[0].startswith("//"):
         final_url = f"https://{final_link[0][2:]}"

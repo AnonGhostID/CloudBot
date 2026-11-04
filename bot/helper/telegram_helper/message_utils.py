@@ -9,7 +9,7 @@ from cryptography.fernet import InvalidToken
 
 from pyrogram import Client
 from pyrogram.enums import ParseMode
-from pyrogram.types import InputMediaPhoto
+from pyrogram.types import InputMediaPhoto, LinkPreviewOptions
 from pyrogram.errors import ReplyMarkupInvalid, FloodWait, PeerIdInvalid, ChannelInvalid, RPCError, UserNotParticipant, MessageNotModified, MessageEmpty, PhotoInvalidDimensions, WebpageCurlFailed, MediaEmpty
 
 from bot import config_dict, user_data, categories_dict, bot_cache, LOGGER, bot_name, status_reply_dict, status_reply_dict_lock, Interval, bot, user, download_dict_lock
@@ -24,31 +24,39 @@ async def sendMessage(message, text, buttons=None, photo=None, **kwargs):
             try:
                 if photo == 'IMAGES':
                     photo = rchoice(config_dict['IMAGES'])
-                return await message.reply_photo(photo=photo, reply_to_message_id=message.id,
-                                                 caption=text, reply_markup=buttons, disable_notification=True, **kwargs)
+                result = await message.reply_photo(photo=photo, caption=text, reply_markup=buttons,
+                                                   disable_notification=True, **kwargs)
+                if result is None:
+                    raise RuntimeError("Telegram did not return the sent photo")
+                return result
             except IndexError:
                 pass
             except (PhotoInvalidDimensions, WebpageCurlFailed, MediaEmpty):
                 des_dir = await download_image_url(photo)
-                await sendMessage(message, text, buttons, des_dir)
-                await aioremove(des_dir)
-                return
-            except Exception as e:
-                LOGGER.error(format_exc())
-        return await message.reply(text=text, quote=True, disable_web_page_preview=True, disable_notification=True,
-                                    reply_markup=buttons, reply_to_message_id=rply.id if (rply := message.reply_to_message) and not rply.text and not rply.caption else None,
-                                    **kwargs)
+                try:
+                    return await sendMessage(message, text, buttons, des_dir, **kwargs)
+                finally:
+                    await aioremove(des_dir)
+        reply_to = message.reply_to_message
+        target = reply_to if reply_to and not reply_to.text and not reply_to.caption else message
+        result = await target.reply(text=text, link_preview_options=LinkPreviewOptions(is_disabled=True),
+                                    disable_notification=True, reply_markup=buttons, **kwargs)
+        if result is None:
+            raise RuntimeError("Telegram did not return the sent message")
+        return result
     except FloodWait as f:
         LOGGER.warning(str(f))
         await sleep(f.value * 1.2)
-        return await sendMessage(message, text, buttons, photo)
+        return await sendMessage(message, text, buttons, photo, **kwargs)
     except ReplyMarkupInvalid:
-        return await sendMessage(message, text, None, photo)
+        return await sendMessage(message, text, None, photo, **kwargs)
     except MessageEmpty:
-        return await sendMessage(message, text, parse_mode=ParseMode.DISABLED)
-    except Exception as e:
+        if kwargs.get('parse_mode') == ParseMode.DISABLED:
+            raise
+        return await sendMessage(message, text, buttons, photo, **{**kwargs, 'parse_mode': ParseMode.DISABLED})
+    except Exception:
         LOGGER.error(format_exc())
-        return str(e)
+        raise
 
 
 async def sendCustomMsg(chat_id, text, buttons=None, photo=None, debug=False):
@@ -63,22 +71,25 @@ async def sendCustomMsg(chat_id, text, buttons=None, photo=None, debug=False):
                 pass
             except (PhotoInvalidDimensions, WebpageCurlFailed, MediaEmpty):
                 des_dir = await download_image_url(photo)
-                await sendCustomMsg(chat_id, text, buttons, des_dir)
-                await aioremove(des_dir)
-                return
+                try:
+                    return await sendCustomMsg(chat_id, text, buttons, des_dir, debug)
+                finally:
+                    await aioremove(des_dir)
+            except (FloodWait, ReplyMarkupInvalid):
+                raise
             except Exception as e:
                 LOGGER.error(format_exc())
-        return await bot.send_message(chat_id=chat_id, text=text, disable_web_page_preview=True,
+        return await bot.send_message(chat_id=chat_id, text=text, link_preview_options=LinkPreviewOptions(is_disabled=True),
                                                   disable_notification=True, reply_markup=buttons)
     except FloodWait as f:
         LOGGER.warning(str(f))
         await sleep(f.value * 1.2)
-        return await sendCustomMsg(chat_id, text, buttons, photo)
+        return await sendCustomMsg(chat_id, text, buttons, photo, debug)
     except ReplyMarkupInvalid:
-        return await sendCustomMsg(chat_id, text, None, photo)
+        return await sendCustomMsg(chat_id, text, None, photo, debug)
     except Exception as e:
         LOGGER.error(format_exc())
-        return str(e)
+        return None
 
 
 async def chat_info(channel_id):
@@ -108,7 +119,7 @@ async def sendMultiMessage(chat_ids, text, buttons=None, photo=None):
                     if photo == 'IMAGES':
                         photo = rchoice(config_dict['IMAGES'])
                     sent = await bot.send_photo(chat_id=chat.id, photo=photo, caption=text,
-                                                     reply_markup=buttons, reply_to_message_id=topic_id, disable_notification=True)
+                                                     reply_markup=buttons, message_thread_id=topic_id, disable_notification=True)
                     msg_dict[f"{chat.id}:{topic_id}"] = sent
                 except IndexError:
                     pass
@@ -121,8 +132,8 @@ async def sendMultiMessage(chat_ids, text, buttons=None, photo=None):
                     LOGGER.error(str(e))
                 continue
             LOGGER.info("DEBUG CP 2")
-            sent = await bot.send_message(chat_id=chat.id, text=text, disable_web_page_preview=True,
-                                               disable_notification=True, reply_to_message_id=topic_id, reply_markup=buttons)
+            sent = await bot.send_message(chat_id=chat.id, text=text, link_preview_options=LinkPreviewOptions(is_disabled=True),
+                                               disable_notification=True, message_thread_id=topic_id, reply_markup=buttons)
             msg_dict[f"{chat.id}:{topic_id}"] = sent
         except FloodWait as f:
             LOGGER.warning(str(f))
@@ -140,7 +151,7 @@ async def editMessage(message, text, buttons=None, photo=None):
                 photo = rchoice(config_dict['IMAGES']) if photo == 'IMAGES' else photo
                 return await message.edit_media(InputMediaPhoto(photo, text), reply_markup=buttons)
             return await message.edit_caption(caption=text, reply_markup=buttons)
-        await message.edit(text=text, disable_web_page_preview=True, reply_markup=buttons)
+        return await message.edit(text=text, link_preview_options=LinkPreviewOptions(is_disabled=True), reply_markup=buttons)
     except FloodWait as f:
         LOGGER.warning(str(f))
         await sleep(f.value * 1.2)
@@ -166,11 +177,11 @@ async def editReplyMarkup(message, reply_markup):
 
 async def sendFile(message, file, caption=None, buttons=None):
     try:
-        return await message.reply_document(document=file, quote=True, caption=caption, disable_notification=True, reply_markup=buttons)
+        return await message.reply_document(document=file, caption=caption, disable_notification=True, reply_markup=buttons)
     except FloodWait as f:
         LOGGER.warning(str(f))
         await sleep(f.value * 1.2)
-        return await sendFile(message, file, caption)
+        return await sendFile(message, file, caption, buttons)
     except Exception as e:
         LOGGER.error(str(e))
         return str(e)
@@ -179,10 +190,10 @@ async def sendFile(message, file, caption=None, buttons=None):
 async def sendRss(text):
     try:
         if user:
-            return await user.send_message(chat_id=config_dict['RSS_CHAT'], text=text, disable_web_page_preview=True,
+            return await user.send_message(chat_id=config_dict['RSS_CHAT'], text=text, link_preview_options=LinkPreviewOptions(is_disabled=True),
                                            disable_notification=True)
         else:
-            return await bot.send_message(chat_id=config_dict['RSS_CHAT'], text=text, disable_web_page_preview=True,
+            return await bot.send_message(chat_id=config_dict['RSS_CHAT'], text=text, link_preview_options=LinkPreviewOptions(is_disabled=True),
                                           disable_notification=True)
     except FloodWait as f:
         LOGGER.warning(str(f))
@@ -294,12 +305,16 @@ async def update_all_messages(force=False):
         return
     async with status_reply_dict_lock:
         for chat_id in list(status_reply_dict.keys()):
-            if status_reply_dict[chat_id] and msg != status_reply_dict[chat_id][0].text:
-                rmsg = await editMessage(status_reply_dict[chat_id][0], msg, buttons, 'IMAGES')
+            message = status_reply_dict[chat_id][0]
+            if msg != (message.caption if message.media else message.text):
+                rmsg = await editMessage(message, msg, buttons, 'IMAGES')
                 if isinstance(rmsg, str) and rmsg.startswith('Telegram says: [400'):
                     del status_reply_dict[chat_id]
                     continue
-                status_reply_dict[chat_id][0].text = msg
+                if message.media:
+                    message.caption = msg
+                else:
+                    message.text = msg
                 status_reply_dict[chat_id][1] = time()
 
 
@@ -314,11 +329,11 @@ async def sendStatusMessage(msg):
             message = status_reply_dict[chat_id][0]
             await deleteMessage(message)
             del status_reply_dict[chat_id]
-        if message := await sendMessage(msg, progress, buttons, photo='IMAGES'):
-            if hasattr(message, 'caption'):
-                message.caption = progress
-            else:
-                message.text = progress
+        try:
+            message = await sendMessage(msg, progress, buttons, photo='IMAGES')
+        except Exception:
+            LOGGER.error("Failed to send download status message")
+            return
         status_reply_dict[chat_id] = [message, time()]
         if not Interval:
             Interval.append(setInterval(config_dict['STATUS_UPDATE_INTERVAL'], update_all_messages))

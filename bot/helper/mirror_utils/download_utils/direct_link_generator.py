@@ -14,7 +14,6 @@ from lxml.etree import HTML
 from requests import Session, session as req_session, post, get, RequestException
 from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin
 from cloudscraper import create_scraper
-from lk21 import Bypass
 from http.cookiejar import MozillaCookieJar
 
 from bot import LOGGER, config_dict
@@ -26,9 +25,6 @@ _caches = {}
 user_agent = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 )
-
-fmed_list = ['fembed.net', 'fembed.com', 'femax20.com', 'fcdn.stream', 'feurl.com', 'layarkacaxxi.icu',
-             'naniplay.nanime.in', 'naniplay.nanime.biz', 'naniplay.com', 'mm9842.com']
 
 anonfilesBaseSites = ['anonfiles.com', 'hotfile.io', 'bayfiles.com', 'megaupload.nz', 'letsupload.cc',
                       'filechan.org', 'myfile.is', 'vshare.is', 'rapidshare.nu', 'lolabits.se',
@@ -45,7 +41,7 @@ debrid_sites = ['1fichier.com', '2shared.com', '4shared.com', 'alfafile.net', 'a
                 'fshare.vn', 'gigapeta.com', 'goloady.com', 'docs.google.com', 'gounlimited.to', 'heroupload.com',
                 'hexupload.net', 'hitfile.net', 'hotlink.cc', 'hulkshare.com', 'icerbox.com', 'inclouddrive.com',
                 'isra.cloud', 'katfile.com', 'keep2share.cc', 'letsupload.cc', 'load.to', 'down.mdiaload.com', 'mediafire.com',
-                'mega.co.nz', 'mixdrop.co', 'mixloads.com', 'mp4upload.com', 'nelion.me', 'ninjastream.to', 'nitroflare.com',
+                'mixdrop.co', 'mixloads.com', 'mp4upload.com', 'nelion.me', 'ninjastream.to', 'nitroflare.com',
                 'nowvideo.club', 'oboom.com', 'prefiles.com', 'sky.fm', 'rapidgator.net', 'rapidrar.com', 'rapidu.net',
                 'rarefile.net', 'real-debrid.com', 'redbunker.net', 'redtube.com', 'rockfile.eu', 'rutube.ru', 'scribd.com',
                 'sendit.cloud', 'sendspace.com', 'simfileshare.net', 'solidfiles.com', 'soundcloud.com', 'speed-down.org',
@@ -70,8 +66,8 @@ debrid_link_sites = ["1dl.net", "1fichier.com", "alterupload.com", "cjoint.net",
                 "filedot.xyz", "filedot.to", "filefactory.com", "filenext.com", "filer.net", "filerice.com", "filesfly.cc", "filespace.com", 
                 "filestore.me", "flashbit.cc", "dl.free.fr", "transfert.free.fr", "free.fr", "gigapeta.com", "gofile.io", "highload.to", 
                 "hitfile.net", "hitf.cc", "hulkshare.com", "icerbox.com", "isra.cloud", "goloady.com", "jumploads.com", "katfile.com", 
-                "k2s.cc", "keep2share.com", "keep2share.cc", "kshared.com", "load.to", "mediafile.cc", "mediafire.com", "mega.nz", 
-                "mega.co.nz", "mexa.sh", "mexashare.com", "mx-sh.net", "mixdrop.co", "mixdrop.to", "mixdrop.club", "mixdrop.sx", 
+                "k2s.cc", "keep2share.com", "keep2share.cc", "kshared.com", "load.to", "mediafile.cc", "mediafire.com",
+                "mexa.sh", "mexashare.com", "mx-sh.net", "mixdrop.co", "mixdrop.to", "mixdrop.club", "mixdrop.sx",
                 "modsbase.com", "nelion.me", "nitroflare.com", "nitro.download", "e.pcloud.link", "prefiles.com", "rg.to", 
                 "rapidgator.net", "rapidgator.asia", "scribd.com", "sendspace.com", "sharemods.com", "soundcloud.com", "noregx.debrid.link", 
                 "streamlare.com", "slmaxed.com", "sltube.org", "slwatch.co", "streamtape.com", "subyshare.com", "supervideo.tv", "terabox.com", 
@@ -135,14 +131,10 @@ def direct_link_generator(link):
         return buzzheavier(link)
     elif "fuckingfast.co" in domain:
         return fuckingfast_dl(link)
-    elif 'hxfile.co' in domain:
-        return hxfile(link)
     elif '1drv.ms' in domain:
         return onedrive(link)
     elif 'pixeldrain.com' in domain:
         return pixeldrain(link)
-    elif 'antfiles.com' in domain:
-        return antfiles(link)
     elif 'racaty' in domain:
         return racaty(link)
     elif '1fichier.com' in domain:
@@ -198,10 +190,6 @@ def direct_link_generator(link):
         ]
     ):
         return terabox(link)
-    elif any(x in domain for x in fmed_list):
-        return fembed(link)
-    elif any(x in domain for x in ['sbembed.com', 'watchsb.com', 'streamsb.net', 'sbplay.org']):
-        return sbembed(link)
     elif is_index_link(link) and link.endswith('/'):
         return gd_index(link, auth)
     elif is_share_link(link):
@@ -462,13 +450,6 @@ def fuckingfast_dl(url):
     finally:
         session.close()
 
-def hxfile(url):
-    try:
-        return Bypass().bypass_filesIm(url)
-    except Exception as e:
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-
-
 def letsupload(url):
     with create_scraper() as session:
         try:
@@ -507,29 +488,6 @@ def anonfilesBased(url):
             return sa[0]
         raise DirectDownloadLinkException("ERROR: File not found!")
 
-def fembed(link):
-    try:
-        dl_url = Bypass().bypass_fembed(link)
-        count = len(dl_url)
-        lst_link = [dl_url[i] for i in dl_url]
-        return lst_link[count-1]
-    except Exception as e:
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-
-
-def sbembed(link):
-    """ Sbembed direct link generator
-    Based on https://github.com/zevtyardt/lk21
-    """
-    try:
-        dl_url = Bypass().bypass_sbembed(link)
-        count = len(dl_url)
-        lst_link = [dl_url[i] for i in dl_url]
-        return lst_link[count-1]
-    except Exception as e:
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-
-
 def onedrive(link):
     with create_scraper() as session:
         try:
@@ -567,13 +525,6 @@ def pixeldrain(url):
     file_id = url.split("/")[-1]
     bypass_link = f"https://pd.cybar.xyz/{file_id}"
     return bypass_link
-
-
-def antfiles(url):
-    try:
-        return Bypass().bypass_antfiles(url)
-    except Exception as e:
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
 
 
 def streamtape(url):
@@ -1090,7 +1041,7 @@ def gdtot(url):
         raise DirectDownloadLinkException(
             f'ERROR: {e.__class__.__name__} with {token_url}'
         ) from e
-    path = findall('\("(.*?)"\)', token_page.text)
+    path = findall(r'\("(.*?)"\)', token_page.text)
     if not path:
         raise DirectDownloadLinkException('ERROR: Cannot bypass this')
     path = path[0]
@@ -1108,7 +1059,7 @@ def sharer_scraper(url):
         res = cget('GET', url, headers=header)
     except Exception as e:
         raise DirectDownloadLinkException(f'ERROR: {e.__class__.__name__}') from e
-    key = findall('"key",\s+"(.*?)"', res.text)
+    key = findall(r'"key",\s+"(.*?)"', res.text)
     if not key:
         raise DirectDownloadLinkException("ERROR: Key not found!")
     key = key[0]

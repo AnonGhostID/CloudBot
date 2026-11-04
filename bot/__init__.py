@@ -6,7 +6,7 @@ from inspect import signature
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pyrogram import Client as tgClient, enums, utils as pyroutils
 from pymongo import MongoClient
-from asyncio import Lock
+from asyncio import Lock, new_event_loop, set_event_loop
 from dotenv import load_dotenv, dotenv_values
 from threading import Thread
 from time import sleep, time
@@ -22,6 +22,7 @@ from uvloop import install
 #faulthandler_enable()
 
 install()
+set_event_loop(new_event_loop())
 setdefaulttimeout(600)
 
 pyroutils.MIN_CHAT_ID = -999999999999
@@ -233,13 +234,6 @@ if len(USER_SESSION_STRING) != 0:
         log_error(f"Failed making client from USER_SESSION_STRING : {e}")
         user = ''
 
-MEGA_EMAIL = environ.get('MEGA_EMAIL', '')
-MEGA_PASSWORD = environ.get('MEGA_PASSWORD', '')
-if len(MEGA_EMAIL) == 0 or len(MEGA_PASSWORD) == 0:
-    log_warning('MEGA Credentials not provided!')
-    MEGA_EMAIL = ''
-    MEGA_PASSWORD = ''
-    
 GDTOT_CRYPT = environ.get('GDTOT_CRYPT', '')
 if len(GDTOT_CRYPT) == 0:
     GDTOT_CRYPT = ''
@@ -450,9 +444,6 @@ GDRIVE_LIMIT = '' if len(GDRIVE_LIMIT) == 0 else float(GDRIVE_LIMIT)
 CLONE_LIMIT = environ.get('CLONE_LIMIT', '')
 CLONE_LIMIT = '' if len(CLONE_LIMIT) == 0 else float(CLONE_LIMIT)
 
-MEGA_LIMIT = environ.get('MEGA_LIMIT', '')
-MEGA_LIMIT = '' if len(MEGA_LIMIT) == 0 else float(MEGA_LIMIT)
-
 LEECH_LIMIT = environ.get('LEECH_LIMIT', '')
 LEECH_LIMIT = '' if len(LEECH_LIMIT) == 0 else float(LEECH_LIMIT)
 
@@ -621,7 +612,6 @@ config_dict = {'ANIME_TEMPLATE': ANIME_TEMPLATE,
                'YTDLP_LIMIT': YTDLP_LIMIT,
                'GDRIVE_LIMIT': GDRIVE_LIMIT,
                'CLONE_LIMIT': CLONE_LIMIT,
-               'MEGA_LIMIT': MEGA_LIMIT,
                'LEECH_LIMIT': LEECH_LIMIT,
                'FSUB_IDS': FSUB_IDS,
                'USER_MAX_TASKS': USER_MAX_TASKS,
@@ -667,8 +657,6 @@ config_dict = {'ANIME_TEMPLATE': ANIME_TEMPLATE,
                'TOKEN_TIMEOUT': TOKEN_TIMEOUT,
                'MDL_TEMPLATE': MDL_TEMPLATE,
                'MEDIA_GROUP': MEDIA_GROUP,
-               'MEGA_EMAIL': MEGA_EMAIL,
-               'MEGA_PASSWORD': MEGA_PASSWORD,
                'OWNER_ID': OWNER_ID,
                'QUEUE_ALL': QUEUE_ALL,
                'QUEUE_DOWNLOAD': QUEUE_DOWNLOAD,

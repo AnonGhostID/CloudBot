@@ -190,7 +190,7 @@
 <details>
     <summary><b>From Base and other Repositories</b></summary>
 
-- Mirror direct download links, Torrent, Mega.nz and Telegram files to Google Drive
+- Mirror direct download links, Torrent and Telegram files to Google Drive
 - Copy files from someone's Drive to your Drive
 - Download/Upload progress, Speeds and ETAs
 - Mirror all youtube-dl supported links
@@ -206,7 +206,7 @@
 - Extract these filetypes
   > ZIP, RAR, TAR, 7z, ISO, WIM, CAB, GZIP, BZIP2, APM, ARJ, CHM, CPIO, CramFS, DEB, DMG, FAT, HFS, LZH, LZMA, LZMA2, MBR, MSI, MSLZ, NSIS, NTFS, RPM, SquashFS, UDF, VHD, XAR, Z, TAR.XZ
 - Direct links Supported:
-  > mediafire(folder), letsupload.io, hxfile.co, antfiles, fembed.com, fembed.net, femax20.com, layarkacaxxi.icu, fcdn.stream, sbplay.org, naniplay.com, naniplay.nanime.in, naniplay.nanime.biz, sbembed.com, streamtape.com, streamsb.net, feurl.com, upload.ee, pixeldrain.com, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
+  > mediafire(folder), letsupload.io, streamtape.com, upload.ee, pixeldrain.com, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
 
 </details>
 
@@ -296,10 +296,10 @@ sudo dockerd
 sudo docker build . -t wzmlx
 ```
 
-- Run the image:
+- Run the image with your configuration mounted at runtime (it is excluded from the build context):
 
 ```
-sudo docker run -p 80:80 -p 8080:8080 wzmlx
+sudo docker run -v "$(pwd)/config.env:/usr/src/app/config.env" -p 80:80 -p 8080:8080 wzmlx
 ```
 
 - To stop the running image:
@@ -545,13 +545,6 @@ help - All cmds with description
 
     </details></li>
     <li><details>
-        <summary><b>Mega</b></summary>
-
-    - `MEGA_EMAIL`: E-Mail used to sign-in on mega.nz for using premium account. `Str`
-    - `MEGA_PASSWORD`: Password for mega.nz account. `Str`
-
-    </details></li>
-    <li><details>
         <summary><b>Queue System</b></summary>
 
     - `QUEUE_ALL`: Number of parallel tasks of downloads and uploads. For example if 20 task added and `QUEUE_ALL` is `8`, then the summation of uploading and downloading tasks are 8 and the rest in queue. `Int`. **NOTE**: if you want to fill `QUEUE_DOWNLOAD` or `QUEUE_UPLOAD`, then `QUEUE_ALL` value must be greater than or equal to the greatest one and less than or equal to summation of `QUEUE_UPLOAD` and `QUEUE_DOWNLOAD`.
@@ -574,7 +567,6 @@ help - All cmds with description
     - `YTDLP_LIMIT`: To limit the size of ytdlp download. the default unit is `GB`. `Int`
     - `PLAYLIST_LIMIT`: To limit Maximum Playlist Number. `Int`
     - `LEECH_LIMIT`: To limit the Torrent/Direct/ytdlp leech size. the default unit is `GB`. `Int`
-    - `MEGA_LIMIT`: To limit the size of Mega download. the default unit is `GB`. `Int`
     - `STORAGE_THRESHOLD`: To leave specific storage free and any download will lead to leave free storage less than this value will be cancelled the default unit is `GB`. `Int`
     - `USER_TIME_INTERVAL`: Time Gap between two consecutive link/file mirror/leech operations. The default value is set to `0` seconds. unit is `sec`. `int` 
     </details></li>

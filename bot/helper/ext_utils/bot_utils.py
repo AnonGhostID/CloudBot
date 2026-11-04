@@ -20,7 +20,6 @@ from concurrent.futures import ThreadPoolExecutor
 from aiohttp import ClientSession as aioClientSession
 from psutil import virtual_memory, cpu_percent, disk_usage
 from requests import get as rget
-from mega import MegaApi
 from pyrogram.enums import ChatType
 from pyrogram.types import BotCommand
 from pyrogram.errors import PeerIdInvalid
@@ -175,7 +174,6 @@ def get_all_versions():
                                     'aria': aria2.client.get_version()['version'],
                                     'aiohttp': version('aiohttp'),
                                     'gapi': version('google-api-python-client'),
-                                    'mega': MegaApi('test').getVersion(),
                                     'qbit': get_client().app.version,
                                     'pyro': vpy,
                                     'ytdlp': version('yt-dlp')}
@@ -189,7 +187,6 @@ class EngineStatus:
         self.STATUS_ARIA = f"Aria2 v{version_cache['aria']}"
         self.STATUS_AIOHTTP = f"AioHttp {version_cache['aiohttp']}"
         self.STATUS_GD = f"Google-API v{version_cache['gapi']}"
-        self.STATUS_MEGA = f"MegaSDK v{version_cache['mega']}"
         self.STATUS_QB = f"qBit {version_cache['qbit']}"
         self.STATUS_TG = f"PyroMulti v{version_cache['pyro']}"
         self.STATUS_YT = f"yt-dlp v{version_cache['ytdlp']}"
@@ -356,16 +353,8 @@ def is_index_link(url):
      return bool(re_match(r'https?:\/\/.+\/\d+\:\/', url))    
 
 
-def is_mega_link(url):
-    return "mega.nz" in url or "mega.co.nz" in url
-
-
 def is_rclone_path(path):
     return bool(re_match(r'^(mrcc:)?(?!magnet:)(?![- ])[a-zA-Z0-9_\. -]+(?<! ):(?!.*\/\/).*$|^rcl$', path))
-
-
-def get_mega_link_type(url):
-    return "folder" if "folder" in url or "/#F!" in url else "file"
 
 
 def arg_parser(items, arg_base):
@@ -580,7 +569,6 @@ async def get_stats(event, key="home"):
                 YL = ('∞' if (val := config_dict['YTDLP_LIMIT']) == '' else val),
                 PL = ('∞' if (val := config_dict['PLAYLIST_LIMIT']) == '' else val),
                 CL = ('∞' if (val := config_dict['CLONE_LIMIT']) == '' else val),
-                ML = ('∞' if (val := config_dict['MEGA_LIMIT']) == '' else val),
                 LL = ('∞' if (val := config_dict['LEECH_LIMIT']) == '' else val),
                 TV  = ('Disabled' if (val := config_dict['TOKEN_TIMEOUT']) == '' else get_readable_time(val)),
                 UTI = ('Disabled' if (val := config_dict['USER_TIME_INTERVAL']) == 0 else get_readable_time(val)),

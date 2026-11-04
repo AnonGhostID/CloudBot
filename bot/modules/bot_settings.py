@@ -131,12 +131,6 @@ async def load_config():
             x = x.lstrip('.')
             GLOBAL_EXTENSION_FILTER.append(x.strip().lower())
 
-    MEGA_EMAIL = environ.get('MEGA_EMAIL', '')
-    MEGA_PASSWORD = environ.get('MEGA_PASSWORD', '')
-    if len(MEGA_EMAIL) == 0 or len(MEGA_PASSWORD) == 0:
-        MEGA_EMAIL = ''
-        MEGA_PASSWORD = ''
-      
     GDTOT_CRYPT = environ.get('GDTOT_CRYPT', '')
     if len(GDTOT_CRYPT) == 0:
         GDTOT_CRYPT = ''
@@ -378,9 +372,6 @@ async def load_config():
     CLONE_LIMIT = environ.get('CLONE_LIMIT', '')
     CLONE_LIMIT = '' if len(CLONE_LIMIT) == 0 else float(CLONE_LIMIT)
 
-    MEGA_LIMIT = environ.get('MEGA_LIMIT', '')
-    MEGA_LIMIT = '' if len(MEGA_LIMIT) == 0 else float(MEGA_LIMIT)
-
     LEECH_LIMIT = environ.get('LEECH_LIMIT', '')
     LEECH_LIMIT = '' if len(LEECH_LIMIT) == 0 else float(LEECH_LIMIT)
 
@@ -610,7 +601,6 @@ async def load_config():
                         'YTDLP_LIMIT': YTDLP_LIMIT,
                         'GDRIVE_LIMIT': GDRIVE_LIMIT,
                         'CLONE_LIMIT': CLONE_LIMIT,
-                        'MEGA_LIMIT': MEGA_LIMIT,
                         'LEECH_LIMIT': LEECH_LIMIT,
                         'FSUB_IDS': FSUB_IDS,
                         'USER_MAX_TASKS': USER_MAX_TASKS,
@@ -653,8 +643,6 @@ async def load_config():
                         'LOGIN_PASS': LOGIN_PASS,
                         'TOKEN_TIMEOUT': TOKEN_TIMEOUT,
                         'MEDIA_GROUP': MEDIA_GROUP,
-                        'MEGA_EMAIL': MEGA_EMAIL,
-                        'MEGA_PASSWORD': MEGA_PASSWORD,
                         'MDL_TEMPLATE': MDL_TEMPLATE,
                         'OWNER_ID': OWNER_ID,
                         'QUEUE_ALL': QUEUE_ALL,

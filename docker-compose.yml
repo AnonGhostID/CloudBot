@@ -30,6 +30,8 @@ services:
   #   restart: on-failure
   app:
     build: .
+    volumes:
+      - ./config.env:/usr/src/app/config.env
     # network_mode: "service:gluetun" # komen aja kalo ma matiin vpn nya
     command: bash start.sh
     restart: on-failure

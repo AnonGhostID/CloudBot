@@ -125,7 +125,7 @@ async def start_from_queued():
                     start_dl_from_queued(uid)
 
 
-async def limit_checker(size, listener, isTorrent=False, isMega=False, isDriveLink=False, isYtdlp=False, isPlayList=None):
+async def limit_checker(size, listener, isTorrent=False, isDriveLink=False, isYtdlp=False, isPlayList=None):
     LOGGER.info('Checking Size Limit of link/file/folder/tasks...')
     user_id = listener.message.from_user.id 
     if await CustomFilters.sudo('', listener.message):
@@ -136,11 +136,6 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isDriveLi
             limit = CLONE_LIMIT * 1024**3
             if size > limit:
                 limit_exceeded = f'Clone limit is {get_readable_file_size(limit)}.'
-    elif isMega:
-        if MEGA_LIMIT := config_dict['MEGA_LIMIT']:
-            limit = MEGA_LIMIT * 1024**3
-            if size > limit:
-                limit_exceeded = f'Mega limit is {get_readable_file_size(limit)}'
     elif isDriveLink:
         if GDRIVE_LIMIT := config_dict['GDRIVE_LIMIT']:
             limit = GDRIVE_LIMIT * 1024**3

@@ -92,7 +92,6 @@ class WZMLStyle:
 ┠ <b>GDrive Limit :</b> {GL} GB
 ┠ <b>YT-DLP Limit :</b> {YL} GB
 ┠ <b>Playlist Limit :</b> {PL}
-┠ <b>Mega Limit :</b> {ML} GB
 ┠ <b>Clone Limit :</b> {CL} GB
 ┖ <b>Leech Limit :</b> {LL} GB
 

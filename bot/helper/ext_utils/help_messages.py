@@ -105,7 +105,7 @@ Reply to this example by this cmd <code>/cmd</code> b(bulk)
 You can set start and end of the links from the bulk with -b start:end or only end by -b :end or only start by -b start. The default start is from zero(first link) to inf.
 
 ➲ <b>NOTES:</b>
-Check all yt-dlp API options from this <a href='https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L184'>FILE</a>
+Only safe yt-dlp API options are accepted. Lists, tuples and dictionaries must be Python literals, not expressions. Commands, custom postprocessors and executable or filesystem paths are not allowed.
 """]
 
 MIRROR_HELP_MESSAGE = ["""<i>Send links/files along with cmd or reply to cmd to mirror or leech on Telegram or GDrive or DDLs with different Engines like RClone, Aria2 or qBit</i>
@@ -529,5 +529,5 @@ default_desp = {'AS_DOCUMENT': 'Default type of Telegram file upload. Default is
                 'USER_SESSION_STRING': "To download/upload from your telegram account and to send rss. To generate session string use this command <code>python3 generate_string_session.py</code> after mounting repo folder for sure.\n\n<b>NOTE:</b> You can't use bot with private message. Use it with superGroup.",
                 'USE_SERVICE_ACCOUNTS': 'Whether to use Service Accounts or not, with google-api-python-client. For this to work see Using Service Accounts section below. Default is False',
                 'WEB_PINCODE': ' Whether to ask for pincode before selecting files from torrent in web or not. Default is False. Bool.',
-                'YT_DLP_OPTIONS': 'Default yt-dlp options. Check all possible options HERE or use this script to convert cli arguments to api options. Format: key:value|key:value|key:value. Add ^ before integer or float, some numbers must be numeric and some string. \nExample: "format:bv*+mergeall[vcodec=none]|nocheckcertificate:True"'
+                'YT_DLP_OPTIONS': 'Safe yt-dlp options in key:value|key:value format. Add ^ before numbers. Lists, tuples and dictionaries must be Python literals. Commands, custom postprocessors and executable or filesystem paths are not allowed. \nExample: "format:bv*+mergeall[vcodec=none]|nocheckcertificate:True"'
                 }

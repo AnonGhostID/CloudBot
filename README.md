@@ -456,7 +456,7 @@ help - All cmds with description
     - `INCOMPLETE_TASK_NOTIFIER`: Get incomplete task messages after restart. Require database and superGroup. Default is `False`. `Bool`
     - `SET_COMMANDS`: Automatically set the Bot Commands no need to set from `@botfather`. Default is `False`. `Bool`
     - `EXTENSION_FILTER`: File extensions that won't upload/clone. Separate them by space. No need to add `.` `Str`
-    - `YT_DLP_OPTIONS`: Default yt-dlp options. Check all possible options [HERE](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L184) or use this [script](https://t.me/mltb_official/177) to convert cli arguments to api options. Format: key:value|key:value|key:value. Add `^` before integer or float, some numbers must be numeric and some string. `str`
+    - `YT_DLP_OPTIONS`: Default yt-dlp options. Format: `key:value|key:value`; add `^` before numeric values. Lists, tuples, and dictionaries must be Python literals, not expressions. Only the options in `SAFE_YT_DLP_OPTIONS` in `bot/helper/mirror_utils/download_utils/yt_dlp_download.py` are accepted. Executable commands, custom postprocessors, executable locations, and filesystem path options are rejected for security. The same rules apply to user settings and `-opt`. `str`
       - Example: "format:bv*+mergeall[vcodec=none]|nocheckcertificate:True"
     - `FSUB_IDS`: Fill chat_id(-100xxxxxx) of groups/channel you want to force subscribe. Separate them by space. Int
       - Note: Bot should be added in the filled chat_id as admin

@@ -6,6 +6,7 @@ from aiohttp import ClientSession
 from aiofiles.os import path as aiopath
 from yt_dlp import YoutubeDL
 from functools import partial
+from html import escape
 from time import time
 
 from bot import DOWNLOAD_DIR, bot, categories_dict, config_dict, user_data, LOGGER
@@ -13,7 +14,7 @@ from bot.helper.ext_utils.task_manager import task_utils
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, auto_delete_message, delete_links, open_category_btns, open_dump_btns
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import get_readable_file_size, fetch_user_tds, fetch_user_dumps, is_url, is_gdrive_link, new_task, sync_to_async, new_task, is_rclone_path, new_thread, get_readable_time, arg_parser
-from bot.helper.mirror_utils.download_utils.yt_dlp_download import YoutubeDLHelper
+from bot.helper.mirror_utils.download_utils.yt_dlp_download import YoutubeDLHelper, parse_yt_dlp_options
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
@@ -363,6 +364,11 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
     user_dict = user_data.get(user_id, {})
 
     opt = opt or user_dict.get('yt_opt') or config_dict['YT_DLP_OPTIONS']
+    try:
+        opt = parse_yt_dlp_options(opt)
+    except ValueError as e:
+        await sendMessage(message, f"<b>YT-DLP options error:</b> <code>{escape(str(e))}</code>")
+        return
     
     if username := message.from_user.username:
         tag = f'@{username}'
@@ -471,26 +477,13 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
 
     options = {'usenetrc': True, 'cookiefile': 'cookies.txt'}
     if opt:
-        yt_opt = opt.split('|')
-        for ytopt in yt_opt:
-            key, value = map(str.strip, ytopt.split(':', 1))
+        for key, value in opt.items():
             if key == 'format':
                 if select:
                     qual = ''
-                elif value.startswith('ba/b-'):
+                elif isinstance(value, str) and value.startswith('ba/b-'):
                     qual = value
                     continue
-            if value.startswith('^'):
-                if '.' in value or value == '^inf':
-                    value = float(value.split('^')[1])
-                else:
-                    value = int(value.split('^')[1])
-            elif value.lower() == 'true':
-                value = True
-            elif value.lower() == 'false':
-                value = False
-            elif value.startswith(('{', '[', '(')) and value.endswith(('}', ']', ')')):
-                value = eval(value)
             options[key] = value
 
         options['playlist_items'] = '0'

@@ -4,6 +4,7 @@ from secrets import token_hex
 from logging import getLogger
 from yt_dlp import YoutubeDL, DownloadError
 from re import search as re_search
+from ast import literal_eval
 
 from bot import download_dict_lock, download_dict, non_queued_dl, queue_dict_lock
 from bot.helper.telegram_helper.message_utils import sendStatusMessage
@@ -13,6 +14,57 @@ from bot.helper.ext_utils.bot_utils import sync_to_async, async_to_sync
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
 
 LOGGER = getLogger(__name__)
+
+SAFE_YT_DLP_OPTIONS = frozenset({
+    'format', 'format_sort', 'format_sort_force', 'prefer_free_formats',
+    'allow_unplayable_formats', 'ignore_no_formats_error',
+    'allow_multiple_video_streams', 'allow_multiple_audio_streams',
+    'merge_output_format', 'final_ext', 'fixup', 'keepvideo',
+    'noplaylist', 'playlist_items', 'playliststart', 'playlistend',
+    'playlistreverse', 'playlistrandom', 'lazy_playlist', 'ignoreerrors',
+    'skip_playlist_after_errors', 'matchtitle', 'rejecttitle', 'age_limit',
+    'min_views', 'max_views', 'extract_flat', 'skip_download',
+    'writedescription', 'writeinfojson', 'clean_infojson', 'getcomments',
+    'writethumbnail', 'write_all_thumbnails', 'writesubtitles',
+    'writeautomaticsub', 'subtitlesformat', 'subtitleslangs',
+    'writelink', 'writeurllink', 'writewebloclink', 'writedesktoplink',
+    'restrictfilenames', 'windowsfilenames', 'trim_file_name',
+    'retries', 'fragment_retries', 'file_access_retries', 'extractor_retries',
+    'concurrent_fragment_downloads', 'ratelimit', 'throttledratelimit',
+    'socket_timeout', 'http_chunk_size', 'sleep_interval',
+    'max_sleep_interval', 'sleep_interval_requests', 'sleep_interval_subtitles',
+    'continuedl', 'hls_use_mpegts', 'hls_split_discontinuity',
+    'dynamic_mpd', 'live_from_start', 'force_keyframes_at_cuts',
+    'username', 'password', 'videopassword', 'ap_mso', 'ap_username',
+    'ap_password', 'http_headers', 'proxy', 'geo_verification_proxy',
+    'geo_bypass', 'geo_bypass_country', 'geo_bypass_ip_block',
+    'nocheckcertificate', 'prefer_insecure', 'extractor_args',
+    'mark_watched', 'force_generic_extractor',
+})
+
+
+def parse_yt_dlp_options(options):
+    parsed = {}
+    for option in options.split('|') if options else ():
+        key, separator, value = option.partition(':')
+        key, value = key.strip(), value.strip()
+        if not separator or key not in SAFE_YT_DLP_OPTIONS:
+            raise ValueError(f"Unsupported or invalid yt-dlp option: {key}")
+        try:
+            if value.startswith('^'):
+                value = float(value[1:]) if '.' in value or value == '^inf' else int(value[1:])
+            elif value.lower() in ('true', 'false'):
+                value = value.lower() == 'true'
+            elif value.startswith(('{', '[', '(')):
+                value = literal_eval(value)
+                if not isinstance(value, (dict, list, tuple)):
+                    raise ValueError
+        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError) as e:
+            raise ValueError(f"Invalid value for yt-dlp option: {key}") from e
+        if key == 'format' and not isinstance(value, str):
+            raise ValueError("Invalid value for yt-dlp option: format")
+        parsed[key] = value
+    return parsed
 
 
 class MyLogger:
@@ -214,8 +266,9 @@ class YoutubeDLHelper:
 
         self.opts['format'] = qual
 
-        if options:
-            self.__set_options(options)
+        for key, value in options.items():
+            if key != 'format' or not value.startswith('ba/b-'):
+                self.opts[key] = value
 
         await sync_to_async(self.extractMetaData, link, name)
         if self.__is_cancelled:
@@ -282,29 +335,3 @@ class YoutubeDLHelper:
         LOGGER.info(f"Cancelling Download: {self.name}")
         if not self.__downloading:
             await self.__listener.onDownloadError("Download Cancelled by User!")
-
-    def __set_options(self, options):
-        options = options.split('|')
-        for opt in options:
-            key, value = map(str.strip, opt.split(':', 1))
-            if key == 'format' and value.startswith('ba/b-'):
-                continue
-            if value.startswith('^'):
-                if '.' in value or value == '^inf':
-                    value = float(value.split('^', 1)[1])
-                else:
-                    value = int(value.split('^', 1)[1])
-            elif value.lower() == 'true':
-                value = True
-            elif value.lower() == 'false':
-                value = False
-            elif value.startswith(('{', '[', '(')) and value.endswith(('}', ']', ')')):
-                value = eval(value)
-
-            if key == 'postprocessors':
-                if isinstance(value, list):
-                    self.opts[key].extend(tuple(value))
-                elif isinstance(value, dict):
-                    self.opts[key].append(value)
-            else:
-                self.opts[key] = value

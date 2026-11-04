@@ -72,9 +72,9 @@ Telegram buttons use blue for navigation and links, green for confirmations and 
       <summary><b>Upload Hosts</b></summary>
 
     - Upload Files/Folder in the Supported Sites
-      - GoFile, StreamTape, PixelDrain and BuzzHeavier
+      - GoFile, StreamTape, PixelDrain, BuzzHeavier and AkiraBox
     - Upload to enabled hosts or select one host per task
-    - Explicit host selections require user or shared config credentials; StreamTape requires a login and API key
+    - AkiraBox uploads anonymously; other explicit host selections require user or shared config credentials. StreamTape requires a login and API key.
     </details></li>
     <li><details>
       <summary><b>Google Drive</b></summary>
@@ -456,7 +456,7 @@ help - All cmds with description
     - `SUDO_USERS`: Fill user_id of users whom you want to give sudo permission. Separate them by space. `Int`
     - `BLACKLIST_USERS` : Fill user_id of users you wish to prohibit from using the bot. Separate them by space. `Int`
     - `STATUS_LIMIT`: Limit the no. of tasks shown in status message with buttons. Default is `10`. **NOTE**: Recommended limit is `4` tasks. `Int`
-    - `DEFAULT_UPLOAD`: `rc` uploads to `RCLONE_PATH`, `gd` to `GDRIVE_ID`, `hosts` to enabled Upload Hosts, or `gf`, `bh`, `pd`, `stp` to one host. Default is `gd`. `Str`
+    - `DEFAULT_UPLOAD`: `rc` uploads to `RCLONE_PATH`, `gd` to `GDRIVE_ID`, `hosts` to enabled Upload Hosts, or `gf`, `bh`, `pd`, `stp`, `ab` to one host. Default is `gd`. `Str`
     - `STATUS_UPDATE_INTERVAL`: Time in seconds after which the progress/status message will be updated. Recommended `10` seconds at least. `Int`
     - `AUTO_DELETE_MESSAGE_DURATION`: Interval of time (in seconds), after which the bot deletes it's message and command message which is expected to be viewed instantly. **NOTE**: Set to `-1` to disable auto message deletion. `Int`
     - `INCOMPLETE_TASK_NOTIFIER`: Get incomplete task messages after restart. Require database and superGroup. Default is `False`. `Bool`
@@ -709,12 +709,13 @@ python3 generate_drive_token.py
 - `RCLONE_PATH` is like `GDRIVE_ID` a default path for mirror. In additional to those variables `DEFAULT_UPLOAD` to choose the default tool whether it's rclone or google-api-python-client.
 - If `DEFAULT_UPLOAD` = 'rc' then you must fill `RCLONE_PATH` with path as default one or with `rcl` to select destination path on each new task.
 - If `DEFAULT_UPLOAD` = 'gd' then you must fill `GDRIVE_ID` with folder/TD id.
-- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, or `stp`) selects that host only.
+- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, `stp`, or `ab`) selects that host only.
 - Existing `DEFAULT_UPLOAD=ddl` settings are migrated to `hosts`. If the value comes from an external environment, change it there to `hosts`.
 - `rclone.conf` can be added before deploy like `token.pickle` to repo folder root or use bsetting to upload it as private file.
 - If rclone.conf uploaded from usetting or added in `rclone/{user_id}.conf` then `RCLONE_PATH` must start with `mrcc:`.
 - Whenever you want to write path manually to use user rclone.conf that added from usetting then you must add the `mrcc:` at the beginning.
-- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, or `-up stp` for StreamTape. Codes are case-insensitive and select only that host, even if its toggle is disabled. Each explicit selection requires user or shared config credentials before downloading; StreamTape requires `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up stp` for StreamTape, or `-up ab` for AkiraBox. Codes are case-insensitive and select only that host, even if its toggle is disabled. AkiraBox needs no credentials; other explicit selections require user or shared config credentials before downloading. StreamTape requires `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- AkiraBox uses its undocumented guest website upload flow, which may change. It accepts one non-empty file up to 5 GiB (5,368,709,120 bytes), not folders. Guest links expire after 7 days without a download.
 - Optional `GOFILE_API_KEY`, `PIXELDRAIN_API_KEY`, `BUZZHEAVIER_API_KEY`, and `STREAMTAPE_CREDENTIALS` (`login:key`) in `config.env` are shared fallbacks for all authorized users. Previously saved user credentials take precedence and can be deleted in User Settings, but new credentials are configured in `config.env`. Shared credentials do not enable hosts automatically; enable each host in User Settings for multi-host uploads.
 - PixelDrain uploads accept its HTTP 201 file-info response even when the `success` field is absent; a file ID is still required.
 - Other `-up` destinations are `gd` (GDRIVE_ID), `rc` (RCLONE_PATH), `rcl` (select an Rclone path), and `remote:path` or `mrcc:remote:path` for owner or user Rclone configurations.

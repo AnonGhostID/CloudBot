@@ -80,7 +80,8 @@ Make Sure Bot is already Admin else it will not accept.
 <code>/cmd</code> link -up <code>bh</code> (BuzzHeavier)
 <code>/cmd</code> link -up <code>pd</code> (PixelDrain)
 <code>/cmd</code> link -up <code>stp</code> (StreamTape)
-Host codes are case-insensitive and select only that host, even if it is disabled in settings. Each explicit host selection requires user or shared config credentials before downloading; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+<code>/cmd</code> link -up <code>ab</code> (AkiraBox, anonymous, 5 GB per file)
+Host codes are case-insensitive and select only that host, even if it is disabled in settings. AkiraBox needs no credentials. Other explicit host selections require user or shared config credentials; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
 With no -up, DEFAULT_UPLOAD=hosts uploads to enabled hosts; a host code selects that host only.
 You can directly add the upload path: -up remote:dir/subdir
 
@@ -203,7 +204,8 @@ Make Sure Bot is already Admin else it will not accept.
 <code>/cmd</code> link -up <code>bh</code> (BuzzHeavier)
 <code>/cmd</code> link -up <code>pd</code> (PixelDrain)
 <code>/cmd</code> link -up <code>stp</code> (StreamTape)
-Host codes are case-insensitive and select only that host, even if it is disabled in settings. Each explicit host selection requires user or shared config credentials before downloading; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+<code>/cmd</code> link -up <code>ab</code> (AkiraBox, anonymous, 5 GB per file)
+Host codes are case-insensitive and select only that host, even if it is disabled in settings. AkiraBox needs no credentials. Other explicit host selections require user or shared config credentials; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
 With no -up, DEFAULT_UPLOAD=hosts uploads to enabled hosts; a host code selects that host only.
 You can directly add the upload path: -up remote:dir/subdir
 
@@ -480,7 +482,7 @@ default_desp = {'AS_DOCUMENT': 'Default type of Telegram file upload. Default is
                 'BOT_TOKEN': 'The Telegram Bot Token that you got from @BotFather',
                 'CMD_SUFFIX': 'Telegram Bot Command Index number or Custom Text. This will added at the end all commands except Global Commands. Str',
                 'DATABASE_URL': "Your Mongo Database URL (Connection string). Follow this Generate Database to generate database. Data will be saved in Database: auth and sudo users, users settings including thumbnails for each user, rss data and incomplete tasks.\n\n <b>NOTE:</b> You can always edit all settings that saved in database from the official site -> (Browse collections)",
-                'DEFAULT_UPLOAD': 'Upload destination: gd (GDRIVE_ID), rc (RCLONE_PATH), hosts (enabled Upload Hosts), or one host code: gf, bh, pd, stp. Default is gd.',
+                'DEFAULT_UPLOAD': 'Upload destination: gd (GDRIVE_ID), rc (RCLONE_PATH), hosts (enabled Upload Hosts), or one host code: gf, bh, pd, stp, ab. Default is gd.',
                 'DOWNLOAD_DIR': 'The path to the local folder where the downloads should be downloaded to. ',
                 'MDL_TEMPLATE': 'Set Bot Custom Default MyDramaList Template. HTML Tags, Emojis Supported',
                 'CLEAN_LOG_MSG': 'Clean Leech Log & Bot PM Task Start Message. Default is False',

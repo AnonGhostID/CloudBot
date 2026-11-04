@@ -80,7 +80,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
     up            = args['-up'] or args['-upload']
     if not isLeech and isinstance(up, str):
         if up.casefold() in ('ddl', 'hosts'):
-            await sendMessage(message, 'Choose one upload host: -up gf, -up bh, -up pd or -up stp.')
+            await sendMessage(message, 'Choose one upload host: -up gf, -up bh, -up pd, -up stp or -up ab.')
             return
         if (host := resolve_upload_host(up)) is not None:
             if error := upload_host_credential_error(host, user_data.get(message.from_user.id, {})):

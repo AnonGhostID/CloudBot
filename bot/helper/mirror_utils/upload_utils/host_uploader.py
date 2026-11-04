@@ -4,6 +4,7 @@ from pathlib import Path
 from time import monotonic
 from urllib.parse import urlsplit
 
+import aiofiles
 from aiofiles.os import path as aiopath
 from aiohttp import ClientError, ClientSession, ClientTimeout, FormData
 
@@ -11,6 +12,7 @@ from bot import LOGGER, user_data
 from bot.helper.ext_utils.fs_utils import get_mime_type
 from bot.helper.ext_utils.upload_hosts import HOST_CREDENTIAL_VARS, upload_host_credential
 from bot.helper.mirror_utils.upload_utils.progress_file_reader import ProgressFileReader
+from bot.helper.mirror_utils.upload_utils.uploadserver.akirabox import AkiraBox
 from bot.helper.mirror_utils.upload_utils.uploadserver.buzzheavier import BuzzHeavier
 from bot.helper.mirror_utils.upload_utils.uploadserver.gofile import Gofile
 from bot.helper.mirror_utils.upload_utils.uploadserver.pixeldrain import PixelDrain
@@ -109,6 +111,35 @@ class HostUploader:
         except (ClientError, OSError):
             raise RuntimeError(f'{method} upload failed.') from None
 
+    async def upload_chunk(self, url, file_path, offset, length):
+        parsed = urlsplit(url)
+        if parsed.scheme != 'https' or not parsed.hostname or not parsed.hostname.endswith('.r2.cloudflarestorage.com'):
+            raise RuntimeError('AkiraBox returned an invalid storage URL.')
+
+        async def body():
+            async with aiofiles.open(file_path, 'rb') as file:
+                await file.seek(offset)
+                remaining = length
+                while remaining:
+                    chunk = await file.read(min(1024 * 1024, remaining))
+                    if not chunk:
+                        raise RuntimeError('AkiraBox: file changed during upload.')
+                    remaining -= len(chunk)
+                    self.report_progress(offset + length - remaining)
+                    yield chunk
+
+        try:
+            async with self.__asyncSession.put(
+                url, data=body(), headers={'Content-Length': str(length)},
+                allow_redirects=False,
+                timeout=ClientTimeout(total=7200, connect=60, sock_read=300),
+            ) as response:
+                if response.status != 200 or not response.headers.get('ETag'):
+                    raise RuntimeError('AkiraBox storage upload failed.')
+                return response.headers['ETag']
+        except (ClientError, OSError, asyncio.TimeoutError):
+            raise RuntimeError('AkiraBox storage upload failed.') from None
+
     async def __upload_to_hosts(self, file_path):
         links = {}
         errors = []
@@ -120,6 +151,7 @@ class HostUploader:
             'streamtape': 'StreamTape',
             'pixeldrain': 'PixelDrain',
             'buzzheavier': 'BuzzHeavier',
+            'akirabox': 'AkiraBox',
         }
         for service, settings in self.__upload_hosts.items():
             if self.is_cancelled:
@@ -149,6 +181,8 @@ class HostUploader:
                     adapter = PixelDrain(self, credential)
                 elif service == 'buzzheavier':
                     adapter = BuzzHeavier(self, credential)
+                elif service == 'akirabox':
+                    adapter = AkiraBox(self)
                 else:
                     safe_service = ''.join(c for c in str(service) if c.isascii() and (c.isalnum() or c in '_-'))[:40]
                     raise RuntimeError(f'Unsupported upload host: {safe_service or "unknown"}.')

@@ -6,6 +6,7 @@ HOST_UPLOAD_TARGETS = {
     'bh': 'buzzheavier',
     'pd': 'pixeldrain',
     'stp': 'streamtape',
+    'ab': 'akirabox',
 }
 
 HOST_CREDENTIAL_VARS = {
@@ -13,6 +14,7 @@ HOST_CREDENTIAL_VARS = {
     'buzzheavier': 'BUZZHEAVIER_API_KEY',
     'pixeldrain': 'PIXELDRAIN_API_KEY',
     'streamtape': 'STREAMTAPE_CREDENTIALS',
+    'akirabox': None,
 }
 
 
@@ -25,10 +27,12 @@ def upload_host_credential(host: str, settings: dict) -> str:
     credential = entry[1] if isinstance(entry, (list, tuple)) and len(entry) > 1 else ''
     if isinstance(credential, str) and credential.strip():
         return credential
-    return environ.get(HOST_CREDENTIAL_VARS.get(host, ''), '')
+    return environ.get(HOST_CREDENTIAL_VARS.get(host) or '', '')
 
 
 def upload_host_credential_error(host: str, settings: dict) -> str | None:
+    if host == 'akirabox':
+        return None
     names = {
         'gofile': 'GoFile',
         'buzzheavier': 'BuzzHeavier',

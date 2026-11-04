@@ -1,27 +1,9 @@
-<p align="center">
-    <a href="https://github.com/weebzone/WZML">
-        <kbd>
-            <img width="250" src="https://graph.org/file/639fe4239b78e5862b302.jpg" alt="WZML-X Logo">
-        </kbd>
-    </a>
+# CloudBot
 
 <i>A Telegram Bot written in Python using the Kurigram Pyrogram fork for mirroring/cloning online/local files on the Internet to your Google Drive, Telegram or to any RClone supported cloud. Based on [python-aria-mirror-bot](https://github.com/lzzy12/python-aria-mirror-bot). This is Enhanced Version of Base Repo [mirror-leech-telegram-bot](https://github.com/anasty17/mirror-leech-telegram-bot)</i>
 
-</p>
-
 Telegram replies, status messages, and media groups use Kurigram's reply and link-preview APIs.
 Telegram buttons use blue for navigation and links, green for confirmations and enabled selections, and red for destructive or stop actions. Colors depend on the Telegram client.
-
-<div align=center>
-
-----
-
-[![](https://img.shields.io/github/repo-size/weebzone/WZML-X?color=green&label=Repo%20Size&labelColor=292c3b)](#) [![](https://img.shields.io/github/commit-activity/m/weebzone/WZML-X?logo=github&labelColor=292c3b&label=Github%20Commits)](#) [![](https://img.shields.io/github/license/weebzone/WZML-X?style=flat&label=License&labelColor=292c3b)](#)|[![](https://img.shields.io/github/issues-raw/weebzone/WZML-X?style=flat&label=Open%20Issues&labelColor=292c3b)](#) [![](https://img.shields.io/github/issues-closed-raw/weebzone/WZML-X?style=flat&label=Closed%20Issues&labelColor=292c3b)](#) [![](https://img.shields.io/github/issues-pr-raw/weebzone/WZML-X?style=flat&label=Open%20Pull%20Requests&labelColor=292c3b)](#) [![](https://img.shields.io/github/issues-pr-closed-raw/weebzone/WZML-X?style=flat&label=Closed%20Pull%20Requests&labelColor=292c3b)](#)
-:---:|:---:|
-[![](https://img.shields.io/github/languages/count/weebzone/WZML-X?style=flat&label=Total%20Languages&labelColor=292c3b&color=blueviolet)](#) [![](https://img.shields.io/github/languages/top/weebzone/WZML-X?style=flat&logo=python&labelColor=292c3b)](#) [![](https://img.shields.io/github/last-commit/weebzone/WZML-X?style=flat&label=Last%20Commit&labelColor=292c3b&color=important)](#) [![](https://badgen.net/github/branches/weebzone/WZML-X?label=Total%20Branches&labelColor=292c3b)](#)|[![](https://img.shields.io/github/forks/weebzone/WZML-X?style=flat&logo=github&label=Forks&labelColor=292c3b&color=critical)](#) [![](https://img.shields.io/github/stars/weebzone/WZML-X?style=flat&logo=github&label=Stars&labelColor=292c3b&color=yellow)](#) [![](https://badgen.net/docker/pulls/codewithweeb/weebzone?icon=docker&label=Pulls&labelColor=292c3b&color=blue)](#)
-[![](https://img.shields.io/badge/Telegram%20Channel-Join-9cf?style=for-the-badge&logo=telegram&logoColor=blue&style=flat&labelColor=292c3b)](https://t.me/WZML_X) |[![](https://img.shields.io/badge/Support%20Group-Join-9cf?style=for-the-badge&logo=telegram&logoColor=blue&style=flat&labelColor=292c3b)](https://t.me/WZML_Support) |
-
-</div>
 
 ---
 
@@ -188,7 +170,6 @@ Telegram buttons use blue for navigation and links, green for confirmations and 
 - Almost all repository functions have been improved and many other details can't mention all of them
 - Many bugs have been fixed
 - Bot Limits for each user
-- View In Brief on WZML_X Tg Channel
 
 </details>
 <details>
@@ -239,10 +220,10 @@ Telegram buttons use blue for navigation and links, green for confirmations and 
   <li><details>
     <summary>Installing requirements</summary>
 
-- Clone this repo:
+- Set `REPOSITORY_URL` to the repository you deploy, then clone it:
 
 ```
-git clone https://github.com/weebzone/WZML-X mirrorbot/ && cd mirrorbot
+git clone "$REPOSITORY_URL" cloudbot/ && cd cloudbot
 ```
 
 - For Debian based distros
@@ -305,13 +286,13 @@ sudo dockerd
 - Build Docker image:
 
 ```
-sudo docker build . -t wzmlx
+sudo docker build . -t cloudbot
 ```
 
 - Run the image with your configuration mounted at runtime (it is excluded from the build context):
 
 ```
-sudo docker run -v "$(pwd)/config.env:/usr/src/app/config.env" -p 80:80 -p 8080:8080 wzmlx
+sudo docker run -v "$(pwd)/config.env:/usr/src/app/config.env" -p 80:80 -p 8080:8080 cloudbot
 ```
 
 - To stop the running image:
@@ -328,7 +309,7 @@ sudo docker stop id
 
 #### Build And Run The Docker Image Using docker-compose
 
-**NOTE**: If you want to use ports other than 80 and 8080 for torrent file selection and rclone serve respectively, change it in [docker-compose.yml](https://github.com/weebzone/WZML-X/blob/master/docker-compose.yml) also.
+**NOTE**: If you want to use ports other than 80 and 8080 for torrent file selection and rclone serve respectively, change it in [compose.yml](compose.yml) also.
 
 - Install docker-compose
 
@@ -449,7 +430,7 @@ help - All cmds with description
         <summary><b>Optional Fields</b></summary>
 
     - `USER_SESSION_STRING`: To download/upload from your telegram account and to send rss. To generate session string use this command `python3 generate_string_session.py` after mounting repo folder for sure. `Str`. **NOTE**: You can't use bot with private message. Use it with superGroup.
-    - `DATABASE_URL`: Your Mongo Database URL (Connection string). Follow this [Generate Database](https://github.com/weebzone/WZML-X/tree/master#generate-database) to generate database. Data will be saved in Database: auth and sudo users, users settings including thumbnails for each user, rss data and incomplete tasks. **NOTE**: You can always edit all settings that saved in database from the official site -> (Browse collections). `Str`
+    - `DATABASE_URL`: Your Mongo Database URL (Connection string). Follow this [Generate Database](#-generate-mongodb-database) to generate database. Data will be saved in Database: auth and sudo users, users settings including thumbnails for each user, rss data and incomplete tasks. **NOTE**: You can always edit all settings that saved in database from the official site -> (Browse collections). `Str`
     - `DOWNLOAD_DIR`: The path to the local folder where the downloads should be downloaded to. `Str`
     - `CMD_SUFFIX`: commands index number. This number will added at the end all commands. `Str`|`Int`
     - `AUTHORIZED_CHATS`: Fill user_id and chat_id of groups/users you want to authorize. Separate them by space. `Int`
@@ -474,9 +455,9 @@ help - All cmds with description
 
     - `GDRIVE_ID`: This is the Folder/TeamDrive ID of the Google Drive OR `root` to which you want to upload all the mirrors using google-api-python-client. `Str`
     - `USER_TD_MODE`: Enable the User-TD feature i.e user can upload file into their own drive. Default is `False`. `Bool`
-    - `USER_TD_SA`: Show your SA account in the usetting so that user can add that in its own TD to enable uploading Using SA. SA will be an email/group_email like `wzml-x@googlegroups.com`
+    - `USER_TD_SA`: Show your SA account in the usetting so that user can add that in its own TD to enable uploading Using SA. SA will be an email/group_email like `service-accounts@example.com`
     - `INDEX_URL`: Refer to <https://gitlab.com/ParveenBhadooOfficial/Google-Drive-Index>. `Str`
-    - `USE_SERVICE_ACCOUNTS`: Whether to use Service Accounts or not, with google-api-python-client. For this to work see [Using Service Accounts](https://github.com/weebzone/WZML-X#generate-service-accounts-what-is-service-account) section below. Default is `False`. `Bool`
+    - `USE_SERVICE_ACCOUNTS`: Whether to use Service Accounts or not, with google-api-python-client. For this to work see [Using Service Accounts](#1-generate-service-accounts-what-is-service-account) section below. Default is `False`. `Bool`
     - `IS_TEAM_DRIVE`: Set `True` if uploading to TeamDrive using google-api-python-client. Default is `False`. `Bool`
     - `STOP_DUPLICATE`: Bot will check file/folder name in Drive incase uploading to `GDRIVE_ID`. If it's present in Drive then downloading or cloning will be stopped. (**NOTE**: Item will be checked using name and not hash, so this feature is not perfect yet). Default is `False`. `Bool`
     - `DISABLE_DRIVE_LINK`: Disable drive link button. Default is `False`. `Bool`
@@ -508,7 +489,7 @@ help - All cmds with description
         <summary><b>Update</b></summary>
 
     - `UPSTREAM_REPO`: Your github repository link, if your repo is private add `https://username:{githubtoken}@github.com/{username}/{reponame}` format. Get token from [Github settings](https://github.com/settings/tokens). So you can update your bot from filled repository on each restart. `Str`.
-       - **NOTE**: Any change in docker or requirements you need to deploy/build again with updated repo to take effect. DON'T delete .gitignore file. For more information read [THIS](https://github.com/weebzone/WZML-X/tree/master#upstream-repo-recommended).
+       - **NOTE**: Any change in docker or requirements you need to deploy/build again with updated repo to take effect. DON'T delete .gitignore file.
     - `UPSTREAM_BRANCH`: Upstream branch for update. Default is `master`. `Str`
 
     </details></li>
@@ -872,6 +853,8 @@ python3 add_to_team_drive.py -d SharedTeamDriveSrcID
 
 ### 📡 ***Generate MongoDB Database***
 
+MongoDB is optional; leave `DATABASE_URL` empty to run without it. When configured, CloudBot uses the `cloudbot` database, and the MongoDB user must have access to that database.
+
 <details>
     <summary><b>View All Steps<b><sup><kbd>Click to Expand</kbd></sup></summary>
     
@@ -943,8 +926,8 @@ button_name button_url
 ```
 Example:
 ```
-Repo_❤️ https://github.com/WZML-X 
-Updates https://t.me/WZML_X
+Documentation https://docs.python.org/3/
+Telegram_API https://core.telegram.org/bots/api
 ```
 - **Note**: If you want to add space in button name use `_` for add space
 

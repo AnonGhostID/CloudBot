@@ -228,13 +228,7 @@ function s_validate() {
           src="https://graph.org/file/1a6ad157f55bc42b548df.png"
           alt="logo"
         />
-        <a href="https://t.me/krn_adhikari">
-          <h2 class="name">Bittorrent Selection</h2>
-        </a>
-      </div>
-      <div class="social">
-        <a href="https://www.github.com/weebzone/WZML"><i class="fab fa-github"></i></a>
-        <a href="https://t.me/krn_adhikari"><i class="fab fa-telegram"></i></a>
+        <h2 class="name">Bittorrent Selection</h2>
       </div>
     </header>
     <div id="sticks">
@@ -620,13 +614,7 @@ section span{
           src="https://graph.org/file/1a6ad157f55bc42b548df.png"
           alt="logo"
         />
-        <a href="https://t.me/WZML_X">
-          <h2 class="name">Bittorrent Selection</h2>
-        </a>
-      </div>
-      <div class="social">
-        <a href="https://www.github.com/weebzone/WZML-X"><i class="fab fa-github"></i></a>
-        <a href="https://t.me/WZML_X"><i class="fab fa-telegram"></i></a>
+        <h2 class="name">Bittorrent Selection</h2>
       </div>
     </header>
     <section>
@@ -787,6 +775,7 @@ def homepage():
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CloudBot</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
       rel="stylesheet"
@@ -815,32 +804,17 @@ def homepage():
             padding: 20px;
             text-align: center;
         }
-        .button {
-            background-color: #0001f0;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .image {
-            border-radius: 12px;
-            max-width: 100%;
-        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>WZML-X</h1>
+        <h1>CloudBot</h1>
     </div>
     <div class="content">
-        <img src="https://graph.org/file/639fe4239b78e5862b302.jpg" class="image">
-        <a href="https://telegram.me/WZML_X" style="text-decoration: none;">
-            <button class="button">Join Updates Channel Now</button>
-        </a>
+        <p>Telegram mirror and leech bot.</p>
     </div>
     <div class="footer">
-© 2022-23 WZML-X. All Rights Reserved.
+CloudBot
     </div>
 </body>
 </html>

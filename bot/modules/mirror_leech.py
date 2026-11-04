@@ -221,7 +221,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
 
     if not is_url(link) and not is_magnet(link) and not await aiopath.exists(link) and not is_rclone_path(link) and file_ is None:
         btn = ButtonMaker()
-        btn.ibutton('Cʟɪᴄᴋ Hᴇʀᴇ Tᴏ Rᴇᴀᴅ Mᴏʀᴇ ...', f'wzmlx {message.from_user.id} help MIRROR')
+        btn.ibutton('Cʟɪᴄᴋ Hᴇʀᴇ Tᴏ Rᴇᴀᴅ Mᴏʀᴇ ...', f'cloudbot {message.from_user.id} help MIRROR')
         await sendMessage(message, MIRROR_HELP_MESSAGE[0], btn.build_menu(1))
         await delete_links(message)
         return
@@ -368,7 +368,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         await add_rclone_download(link, config_path, f'{path}/', name, listener)
     elif is_gdrive_link(link):
         await delete_links(message)
-        await add_gd_download(link, path, listener, name, org_link)
+        await add_gd_download(link, path, listener, name)
     elif isQbit and 'real-debrid' not in link:
         await add_qb_torrent(link, path, listener, ratio, seed_time)
     elif not is_telegram_link(link):
@@ -380,7 +380,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
 
 
 @new_task
-async def wzmlxcb(_, query):
+async def cloudbotcb(_, query):
     message = query.message
     user_id = query.from_user.id
     data = query.data.split()
@@ -405,7 +405,7 @@ async def wzmlxcb(_, query):
             startLine = f"<b>Showing Last {ind} Lines from log.txt:</b> \n\n----------<b>START LOG</b>----------\n\n"
             endLine = "\n----------<b>END LOG</b>----------"
             btn = ButtonMaker()
-            btn.ibutton('Cʟᴏsᴇ', f'wzmlx {user_id} close')
+            btn.ibutton('Cʟᴏsᴇ', f'cloudbot {user_id} close')
             await sendMessage(message, startLine + escape(Loglines) + endLine, btn.build_menu(1))
             await editReplyMarkup(message, None)
         except Exception as err:
@@ -423,27 +423,27 @@ async def wzmlxcb(_, query):
         else:
             LOGGER.error(f"Web Paste Failed : {str(err)}")
     elif data[2] == "botpm":
-        await query.answer(url=f"https://t.me/{bot_name}?start=wzmlx")
+        await query.answer(url=f"https://t.me/{bot_name}?start=cloudbot")
     elif data[2] == "help":
         await query.answer()
         btn = ButtonMaker()
-        btn.ibutton('Cʟᴏsᴇ', f'wzmlx {user_id} close')
+        btn.ibutton('Cʟᴏsᴇ', f'cloudbot {user_id} close')
         if data[3] == "CLONE":
             await editMessage(message, CLONE_HELP_MESSAGE[1], btn.build_menu(1))
         elif data[3] == "MIRROR":
             if len(data) == 4:
                 msg = MIRROR_HELP_MESSAGE[1][:4000]
-                btn.ibutton('Nᴇxᴛ Pᴀɢᴇ', f'wzmlx {user_id} help MIRROR readmore')
+                btn.ibutton('Nᴇxᴛ Pᴀɢᴇ', f'cloudbot {user_id} help MIRROR readmore')
             else:
                 msg = MIRROR_HELP_MESSAGE[1][4000:]
-                btn.ibutton('Pʀᴇ Pᴀɢᴇ', f'wzmlx {user_id} help MIRROR')
+                btn.ibutton('Pʀᴇ Pᴀɢᴇ', f'cloudbot {user_id} help MIRROR')
             await editMessage(message, msg, btn.build_menu(2))
         if data[3] == "YT":
             await editMessage(message, YT_HELP_MESSAGE[1], btn.build_menu(1))
     elif data[2] == "guide":
         btn = ButtonMaker()
-        btn.ibutton('Bᴀᴄᴋ', f'wzmlx {user_id} guide home')
-        btn.ibutton('Cʟᴏsᴇ', f'wzmlx {user_id} close')
+        btn.ibutton('Bᴀᴄᴋ', f'cloudbot {user_id} guide home')
+        btn.ibutton('Cʟᴏsᴇ', f'cloudbot {user_id} close')
         if data[3] == "basic":
             await editMessage(message, help_string[0], btn.build_menu(2))
         elif data[3] == "users":
@@ -456,11 +456,11 @@ async def wzmlxcb(_, query):
             await editMessage(message, help_string[2], btn.build_menu(2))
         else:
             buttons = ButtonMaker()
-            buttons.ibutton('Basic', f'wzmlx {user_id} guide basic')
-            buttons.ibutton('Users', f'wzmlx {user_id} guide users')
-            buttons.ibutton('Mics', f'wzmlx {user_id} guide miscs')
-            buttons.ibutton('Owner & Sudos', f'wzmlx {user_id} guide admin')
-            buttons.ibutton('Close', f'wzmlx {user_id} close')
+            buttons.ibutton('Basic', f'cloudbot {user_id} guide basic')
+            buttons.ibutton('Users', f'cloudbot {user_id} guide users')
+            buttons.ibutton('Mics', f'cloudbot {user_id} guide miscs')
+            buttons.ibutton('Owner & Sudos', f'cloudbot {user_id} guide admin')
+            buttons.ibutton('Close', f'cloudbot {user_id} close')
             await editMessage(message, "㊂ <b><i>Help Guide Menu!</i></b>\n\n<b>NOTE: <i>Click on any CMD to see more minor detalis.</i></b>", buttons.build_menu(2))
         await query.answer()
     elif data[2] == "stats":
@@ -499,4 +499,4 @@ bot.add_handler(MessageHandler(leech, filters=command(
     BotCommands.LeechCommand) & CustomFilters.authorized & ~CustomFilters.blacklisted))
 bot.add_handler(MessageHandler(qb_leech, filters=command(
     BotCommands.QbLeechCommand) & CustomFilters.authorized & ~CustomFilters.blacklisted))
-bot.add_handler(CallbackQueryHandler(wzmlxcb, filters=regex(r'^wzmlx')))
+bot.add_handler(CallbackQueryHandler(cloudbotcb, filters=regex(r'^cloudbot')))

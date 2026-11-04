@@ -1,37 +1,14 @@
-## ***Custom Themes*** 🛠
+## Custom Themes
 
-- 🤖 **Tutorial** for how to make your Custom Themes.
-- _Let's First Start with Utilities._
+Copy [cloudbot_minimal.py](cloudbot_minimal.py) to a new file in this folder, such as `cloudbot_custom.py` or `cloudbot_futuristic.py`, and edit its values.
 
-### ***Requirements :***
-1. A Local Editor or Use [github.dev](https://github.dev)
-2. **Sample File :** Check [wzml_minimal.py](https://github.com/weebzone/WZML-X/blob/master/bot/helper/themes/wzml_minimal.py)
+- Keep the class name `CloudBotStyle` and the existing variable names, such as `ST_BN1_NAME`.
+- Preserve the names inside formatting braces, such as `{sb1n}`. Do not use f-strings for theme values.
+- `REPO_STATS` accepts only `{last_commit}`, `{version}` and `{changelog}`.
 
----
-
-#### ***Step 1:*** Open the Blank Editor and Paste the Codes of wzml_minimal.py and name it `wzml_custom.py`
-You can give the `custom` as your choice, like `wzml_futuristic.py`, etc
-
-#### ***Step 2:*** Start by Editing and Making your Ultimate Design ✨️ and Save in this Folder
-- _Things to Remember while Editing :_
-  - Don't Change the Name Inside `{` `}` **(2nd Brackets)**
-  - Don't Change the Variable Name like `ST_BN1_NAME`, etc
-  - Don't Change the Class name WZMLStyle
-  - Don't Use f-string like `f"{var}"`
-***Sample Editing :***
 ```python
-class WZMLStyle: # Don't Change This
-    ST_BN1_NAME = '{sb1n}'
-    # You can Change as Below !! -->
-    ST_BN1_NAME = "It's {sb1n} ❤️" # Use Double Quotes, when using Single Quotes Inside
+class CloudBotStyle:
+    ST_BN1_NAME = "It's {sb1n}"
 ```
 
-#### ***Step 3:*** Now, Open [__init__.py]() and Edit as shown below and Save it
-```python
-AVL_THEMES = {"minimal": wzml_minimal, "emoji": wzml_emoji, "futuristic": wzml_futuristic} # You can add More ...
-# Add Last Dict Value, as shown, name: filename (same as given in Step 1)
-# Name can be of any Choice to Call the Theme Name
-```
----
-
-_Done, Now you have Successfully Built your Own Theme !_
+Themes are discovered automatically from filenames beginning with `cloudbot_`; no manual registration in `AVL_THEMES` is needed. Set `BOT_THEME` to the filename suffix, such as `custom` for `cloudbot_custom.py`.

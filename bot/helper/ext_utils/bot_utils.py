@@ -472,28 +472,16 @@ def new_thread(func):
     return wrapper
 
 
-async def compare_versions(v1, v2):
-    v1_parts = [int(part) for part in v1.split('-')[0][1:].split('.')]
-    v2_parts = [int(part) for part in v2.split('-')[0][1:].split('.')]
-    for i in range(3):
-        v1_part, v2_part = v1_parts[i], v2_parts[i]
-        if v1_part < v2_part:
-            return "New Version Update is Available! Check Now!"
-        elif v1_part > v2_part:
-            return "More Updated! Kindly Contribute in Official"
-    return "Already up to date with latest version"
-
-
 async def get_stats(event, key="home"):
     user_id = event.from_user.id
     btns = ButtonMaker()
-    btns.ibutton('Back', f'wzmlx {user_id} stats home')
+    btns.ibutton('Back', f'cloudbot {user_id} stats home')
     if key == "home":
         btns = ButtonMaker()
-        btns.ibutton('Bot Stats', f'wzmlx {user_id} stats stbot')
-        btns.ibutton('OS Stats', f'wzmlx {user_id} stats stsys')
-        btns.ibutton('Repo Stats', f'wzmlx {user_id} stats strepo')
-        btns.ibutton('Bot Limits', f'wzmlx {user_id} stats botlimits')
+        btns.ibutton('Bot Stats', f'cloudbot {user_id} stats stbot')
+        btns.ibutton('OS Stats', f'cloudbot {user_id} stats stsys')
+        btns.ibutton('Repo Stats', f'cloudbot {user_id} stats strepo')
+        btns.ibutton('Bot Limits', f'cloudbot {user_id} stats botlimits')
         msg = "⌬ <b><i>Bot & OS Statistics!</i></b>"
     elif key == "stbot":
         total, used, free, disk = disk_usage('/')
@@ -550,13 +538,10 @@ async def get_stats(event, key="home"):
         if await aiopath.exists('.git'):
             last_commit = (await cmd_exec("git log -1 --pretty='%cd ( %cr )' --date=format-local:'%d/%m/%Y'", True))[0]
             changelog = (await cmd_exec("git log -1 --pretty=format:'<code>%s</code> <b>By</b> %an'", True))[0]
-        official_v = (await cmd_exec(f"curl -o latestversion.py https://raw.githubusercontent.com/weebzone/WZML-X/{config_dict['UPSTREAM_BRANCH']}/bot/version.py -s && python3 latestversion.py && rm latestversion.py", True))[0]
         msg = BotTheme('REPO_STATS',
             last_commit=last_commit,
             bot_version=get_version(),
-            lat_version=official_v,
             commit_details=changelog,
-            remarks=await compare_versions(get_version(), official_v),
         )
     elif key == "botlimits":
         msg = BotTheme('BOT_LIMITS',
@@ -572,7 +557,7 @@ async def get_stats(event, key="home"):
                 UT = ('∞' if (val := config_dict['USER_MAX_TASKS']) == '' else val),
                 BT = ('∞' if (val := config_dict['BOT_MAX_TASKS']) == '' else val),
         )
-    btns.ibutton('Close', f'wzmlx {user_id} close')
+    btns.ibutton('Close', f'cloudbot {user_id} close')
     return msg, btns.build_menu(2)
 
 
@@ -723,7 +708,7 @@ async def set_commands(client):
             ),
             BotCommand(
                 BotCommands.HelpCommand,
-                'Get detailed help about the WZML-X Bot',
+                'Get detailed help about CloudBot',
             ),
             BotCommand(
                 BotCommands.UserSetCommand[0],

@@ -120,8 +120,10 @@ class Streamtape:
         if self.uploader.total_files == initial_files:
             raise RuntimeError('No supported video files were uploaded to StreamTape.')
         self._check_cancelled()
-        cover = escape(config_dict['COVER_IMAGE'], quote=True)
-        content = f'<figure><img src="{cover}"></figure>' + ''.join(fragments)
+        content = ''.join(fragments)
+        if config_dict['COVER_IMAGE']:
+            cover = escape(config_dict['COVER_IMAGE'], quote=True)
+            content = f'<figure><img src="{cover}"></figure>' + content
         page = await telegraph.create_page(title='StreamTape X', content=content)
         self._check_cancelled()
         if not isinstance(page, dict) or not isinstance(page.get('path'), str) or not page['path']:

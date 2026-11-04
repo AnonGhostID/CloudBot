@@ -4,8 +4,7 @@ from pyrogram.filters import command
 from secrets import token_hex
 from asyncio import sleep, gather
 from aiofiles.os import path as aiopath
-from cloudscraper import create_scraper as cget
-from json import loads, dumps as jdumps
+from json import loads
 
 from bot import LOGGER, download_dict, download_dict_lock, categories_dict, config_dict, bot
 from bot.helper.ext_utils.task_manager import limit_checker, task_utils
@@ -15,7 +14,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
-from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_task, get_readable_file_size, sync_to_async, fetch_user_tds, is_share_link, new_task, is_rclone_path, cmd_exec, get_telegraph_list, arg_parser
+from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_task, sync_to_async, fetch_user_tds, is_share_link, new_task, is_rclone_path, cmd_exec, get_telegraph_list, arg_parser
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
@@ -136,8 +135,6 @@ async def gdcloneNode(message, link, listen_up):
     if is_gdrive_link(link):
         gd = GoogleDriveHelper()
         name, mime_type, size, files, _ = await sync_to_async(gd.count, link)
-        if org_link:
-            cget().request('POST', "https://wzmlcontribute.vercel.app/contribute", headers={"Content-Type": "application/json"}, data=jdumps({"name": name, "link": org_link, "size": get_readable_file_size(size)}))
         if mime_type is None:
             await sendMessage(message, name)
             return
@@ -173,7 +170,7 @@ async def gdcloneNode(message, link, listen_up):
         await listener.onUploadComplete(link, size, files, folders, mime_type, name)
     else:
         btn = ButtonMaker()
-        btn.ibutton('Click Here to Read More ..', f'wzmlx {message.from_user.id} help CLONE')
+        btn.ibutton('Click Here to Read More ..', f'cloudbot {message.from_user.id} help CLONE')
         reply_message = await sendMessage(message, CLONE_HELP_MESSAGE[0], btn.build_menu(1))
         await auto_delete_message(message, reply_message)
 
@@ -234,7 +231,7 @@ async def clone(client, message):
 
     if len(link) == 0:
         btn = ButtonMaker()
-        btn.ibutton('Cʟɪᴄᴋ Hᴇʀᴇ Tᴏ Rᴇᴀᴅ Mᴏʀᴇ ...', f'wzmlx {message.from_user.id} help CLONE')
+        btn.ibutton('Cʟɪᴄᴋ Hᴇʀᴇ Tᴏ Rᴇᴀᴅ Mᴏʀᴇ ...', f'cloudbot {message.from_user.id} help CLONE')
         await sendMessage(message, CLONE_HELP_MESSAGE[0], btn.build_menu(1))
         await delete_links(message)
         return

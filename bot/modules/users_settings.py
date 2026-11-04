@@ -28,17 +28,17 @@ from bot.helper.themes import BotTheme
 
 handler_dict = {}
 desp_dict = {'rcc': ['RClone is a command-line program to sync files and directories to and from different cloud storage providers like GDrive, OneDrive...', 'Send rclone.conf. \n<b>Timeout:</b> 60 sec'],
-            'lprefix': ['Leech Filename Prefix is the Front Part attacted with the Filename of the Leech Files.', 'Send Leech Filename Prefix. Documentation Here : <a href="https://t.me/WZML_X/77">Click Me</a> \n<b>Timeout:</b> 60 sec'],
-            'lsuffix': ['Leech Filename Suffix is the End Part attached with the Filename of the Leech Files', 'Send Leech Filename Suffix. Documentation Here : <a href="https://t.me/WZML_X/77">Click Me</a> \n<b>Timeout:</b> 60 sec'],
-            'lremname': ['Leech Filename Remname is combination of Regex(s) used for removing or manipulating Filename of the Leech Files', 'Send Leech Filename Remname. Documentation Here : <a href="https://t.me/WZML_X/77">Click Me</a> \n<b>Timeout:</b> 60 sec'],
-            'lcaption': ['Leech Caption is the Custom Caption on the Leech Files Uploaded by the bot', 'Send Leech Caption. You can add HTML tags. Documentation Here : <a href="https://t.me/WZML_X/77">Click Me</a> \n<b>Timeout:</b> 60 sec'],
+            'lprefix': ['Leech Filename Prefix is the Front Part attacted with the Filename of the Leech Files.', 'Send Leech Filename Prefix. \n<b>Timeout:</b> 60 sec'],
+            'lsuffix': ['Leech Filename Suffix is the End Part attached with the Filename of the Leech Files', 'Send Leech Filename Suffix. \n<b>Timeout:</b> 60 sec'],
+            'lremname': ['Leech Filename Remname is combination of Regex(s) used for removing or manipulating Filename of the Leech Files', 'Send Leech Filename Remname. \n<b>Timeout:</b> 60 sec'],
+            'lcaption': ['Leech Caption is the Custom Caption on the Leech Files Uploaded by the bot', 'Send Leech Caption. You can add HTML tags. \n<b>Timeout:</b> 60 sec'],
             'ldump': ['Leech Files User Dump for Personal Use as a Storage.', 'Send Leech Dump Channel ID\n➲ <b>Format:</b> \ntitle chat_id/@username\ntitle2 chat_id2/@username2. \n\n<b>NOTE:</b>Make Bot Admin in the Channel else it will not accept\n<b>Timeout:</b> 60 sec'],
             'mprefix': ['Mirror Filename Prefix is the Front Part attacted with the Filename of the Mirrored/Cloned Files.', 'Send Mirror Filename Prefix. \n<b>Timeout:</b> 60 sec'],
             'msuffix': ['Mirror Filename Suffix is the End Part attached with the Filename of the Mirrored/Cloned Files', 'Send Mirror Filename Suffix. \n<b>Timeout:</b> 60 sec'],
             'mremname': ['Mirror Filename Remname is combination of Regex(s) used for removing or manipulating Filename of the Mirrored/Cloned Files', 'Send Mirror Filename Remname. \n<b>Timeout:</b> 60 sec'],
             'thumb': ['Custom Thumbnail to appear on the Leeched files uploaded by the bot', 'Send a photo to save it as custom thumbnail. \n<b>Alternatively: </b><code>/cmd [photo] -s thumb</code> \n<b>Timeout:</b> 60 sec'],
             'yt_opt': ['YT-DLP Options is the Custom Quality for the extraction of videos from the yt-dlp supported sites.', 'Send safe YT-DLP Options. Timeout: 60 sec\nFormat: key:value|key:value|key:value.\nExample: format:bv*+mergeall[vcodec=none]|nocheckcertificate:True\nLists, tuples and dictionaries must be Python literals. Commands, custom postprocessors and executable or filesystem paths are not allowed.'],
-            'usess': [f'User Session is Telegram Session used to Download Private Contents from Private Channels with no compromise in Privacy, Build with Encryption.\n{"<b>Warning:</b> This Bot is not secured. We recommend asking the group owner to set the Upstream repo to the Official repo. If it is not the official repo, then WZML-X is not responsible for any issues that may occur in your account." if config_dict["UPSTREAM_REPO"] != "https://github.com/weebzone/WZML-X" else "Bot is Secure. You can use the session securely."}', 'Send your Session String.\n<b>Timeout:</b> 60 sec'],
+            'usess': ['A Telegram user session grants access to your account. Only provide it to a bot operator you trust.', 'Send your Session String.\n<b>Timeout:</b> 60 sec'],
             'split_size': ['Leech Splits Size is the size to split the Leeched File before uploading', f'Send Leech split size in any comfortable size, like 2Gb, 500MB or 1.46gB. \n<b>PREMIUM ACTIVE:</b> {IS_PREMIUM_USER}. \n<b>Timeout:</b> 60 sec'],
             'upload_hosts': ['Enable upload hosts for your mirrored files.', ''],
             'user_tds': [f'UserTD helps to Upload files via Bot to your Custom Drive Destination via Global SA mail\n\n➲ <b>SA Mail :</b> {"Not Specified" if "USER_TD_SA" not in config_dict else config_dict["USER_TD_SA"]}', 'Send User TD details for Use while Mirror/Clone\n➲ <b>Format:</b>\nname id/link index(optional)\nname2 link2/id2 index(optional)\n\n<b>NOTE:</b>\n<i>1. Drive ID must be valid, then only it will accept\n2. Names can have spaces\n3. All UserTDs are updated on every change\n4. To delete specific UserTD, give Name(s) separated by each line</i>\n\n<b>Timeout:</b> 60 sec'],
@@ -469,7 +469,7 @@ async def edit_user_settings(client, query):
         handler_dict[user_id] = False
         await query.answer()
         buttons = ButtonMaker()
-        buttons.ibutton('Cʟᴏsᴇ', f'wzmlx {user_id} close')
+        buttons.ibutton('Cʟᴏsᴇ', f'cloudbot {user_id} close')
         await sendMessage(message, from_user.mention, buttons.build_menu(1), thumb_path)
         await update_user_settings(query, 'thumb', 'leech')
     elif data[2] == 'show_tds':

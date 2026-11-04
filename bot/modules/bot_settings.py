@@ -44,10 +44,10 @@ default_values = {'AUTO_DELETE_MESSAGE_DURATION': 30,
                   'BOT_THEME': 'minimal',
                   'BOT_LANG': 'en',
                   'IMG_PAGE': 1,
-                  'AUTHOR_NAME': 'WZML-X',
-                  'AUTHOR_URL': 'https://t.me/WZML_X',
-                  'TITLE_NAME': 'WZ Mirror/Leech X',
-                  'GD_INFO': 'Uploaded by WZML-X',
+                  'AUTHOR_NAME': 'CloudBot',
+                  'AUTHOR_URL': '',
+                  'TITLE_NAME': 'CloudBot',
+                  'GD_INFO': 'Uploaded by CloudBot',
                   }
 bool_vars = ['AS_DOCUMENT', 'BOT_PM', 'STOP_DUPLICATE', 'SET_COMMANDS', 'SAVE_MSG', 'SHOW_MEDIAINFO', 'SOURCE_LINK', 'SAFE_MODE', 'SHOW_EXTRA_CMDS',
              'IS_TEAM_DRIVE', 'USE_SERVICE_ACCOUNTS', 'WEB_PINCODE', 'EQUAL_SPLITS', 'DISABLE_DRIVE_LINK', 'DELETE_LINKS', 'CLEAN_LOG_MSG', 'USER_TD_MODE', 
@@ -439,23 +439,19 @@ async def load_config():
 
     AUTHOR_NAME = environ.get('AUTHOR_NAME', '')
     if len(AUTHOR_NAME) == 0:
-        AUTHOR_NAME = 'WZML-X'
+        AUTHOR_NAME = 'CloudBot'
 
     AUTHOR_URL = environ.get('AUTHOR_URL', '')
-    if len(AUTHOR_URL) == 0:
-        AUTHOR_URL = 'https://t.me/WZML_X'
 
     TITLE_NAME = environ.get('TITLE_NAME', '')
     if len(TITLE_NAME) == 0:
-        TITLE_NAME = 'WeebZone-X'
+        TITLE_NAME = 'CloudBot'
         
     COVER_IMAGE = environ.get('COVER_IMAGE', '')
-    if len(COVER_IMAGE) == 0:
-        COVER_IMAGE = 'https://graph.org/file/60f9f8bcb97d27f76f5c0.jpg'
 
     GD_INFO = environ.get('GD_INFO', '')
     if len(GD_INFO) == 0:
-        GD_INFO = 'Uploaded by WZML-X'
+        GD_INFO = 'Uploaded by CloudBot'
 
     SAVE_MSG = environ.get('SAVE_MSG', '')
     SAVE_MSG = SAVE_MSG.lower() == 'true'
@@ -950,7 +946,7 @@ async def update_private_file(_, message, pre_message):
             await (await create_subprocess_exec("touch", ".netrc")).wait()
             await (await create_subprocess_exec("chmod", "600", ".netrc")).wait()
             await (await create_subprocess_exec("cp", ".netrc", "/root/.netrc")).wait()
-        elif file_name.startswith('wzml_'):
+        elif file_name.startswith('cloudbot_'):
             path = f"bot/helper/themes/{file_name.rsplit('.py', 1)[0]}.py"
             if await aiopath.isfile(path):
                 await remove(path)
@@ -971,7 +967,7 @@ async def update_private_file(_, message, pre_message):
         file_name = safe_filename(doc.file_name)
         directory = getcwd()
         path = file_name
-        if file_name.startswith('wzml_') and file_name.endswith('.py'):
+        if file_name.startswith('cloudbot_') and file_name.endswith('.py'):
             directory = 'bot/helper/themes'
             path = f'{directory}/{file_name}'
         await message.download(file_name=download_path(directory, file_name))

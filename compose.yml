@@ -1,3 +1,4 @@
+name: cloudbot
 services:
   # gluetun:
   #   image: qmcgaw/gluetun

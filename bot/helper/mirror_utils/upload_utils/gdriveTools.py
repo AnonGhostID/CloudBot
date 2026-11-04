@@ -575,7 +575,8 @@ class GoogleDriveHelper:
             return {'files': []}
 
     def drive_list(self, fileName, stopDup=False, noMulti=False, isRecursive=True, itemType="", userId=None):
-        msg = f"""<figure><img src='{config_dict["COVER_IMAGE"]}'></figure>"""
+        cover = f"""<figure><img src='{config_dict["COVER_IMAGE"]}'></figure>""" if config_dict['COVER_IMAGE'] else ''
+        msg = cover
         fileName = self.__escapes(str(fileName))
         contents_no = 0
         telegraph_content = []
@@ -656,7 +657,7 @@ class GoogleDriveHelper:
             if noMulti:
                 break
 
-        if msg != f"""<figure><img src='{config_dict["COVER_IMAGE"]}'></figure>""":
+        if msg and msg != cover:
             telegraph_content.append(msg)
 
         return telegraph_content, contents_no

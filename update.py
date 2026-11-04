@@ -41,7 +41,7 @@ if len(DATABASE_URL) == 0:
 
 if DATABASE_URL is not None:
     conn = MongoClient(DATABASE_URL)
-    db = conn.wzmlx
+    db = conn.cloudbot
     old_config = db.settings.deployConfig.find_one({'_id': bot_id})
     config_dict = db.settings.config.find_one({'_id': bot_id})
     if old_config is not None:
@@ -71,8 +71,8 @@ if UPSTREAM_REPO is not None:
         srun(["rm", "-rf", ".git"])
 
     update = srun([f"git init -q \
-                     && git config --global user.email doc.adhikari@gmail.com \
-                     && git config --global user.name weebzone \
+                     && git config --global user.email cloudbot@localhost \
+                     && git config --global user.name CloudBot \
                      && git add . \
                      && git commit -sm update -q \
                      && git remote add origin {UPSTREAM_REPO} \

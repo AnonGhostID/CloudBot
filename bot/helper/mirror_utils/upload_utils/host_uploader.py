@@ -9,11 +9,11 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, FormData
 
 from bot import LOGGER, user_data
 from bot.helper.ext_utils.fs_utils import get_mime_type
+from bot.helper.ext_utils.upload_hosts import HOST_CREDENTIAL_VARS, upload_host_credential
 from bot.helper.mirror_utils.upload_utils.progress_file_reader import ProgressFileReader
 from bot.helper.mirror_utils.upload_utils.uploadserver.buzzheavier import BuzzHeavier
 from bot.helper.mirror_utils.upload_utils.uploadserver.gofile import Gofile
 from bot.helper.mirror_utils.upload_utils.uploadserver.pixeldrain import PixelDrain
-from bot.helper.mirror_utils.upload_utils.uploadserver.ranoz import Ranoz
 from bot.helper.mirror_utils.upload_utils.uploadserver.streamtape import Streamtape
 
 
@@ -32,7 +32,7 @@ class HostUploader:
         self.total_files = 0
         self.total_folders = 0
         self.is_cancelled = False
-        self.__engine = 'Upload Host'
+        self.__engine = 'UploadHost'
         self.__asyncSession = None
         self.__task = None
         self.__terminal = False
@@ -120,7 +120,6 @@ class HostUploader:
             'streamtape': 'StreamTape',
             'pixeldrain': 'PixelDrain',
             'buzzheavier': 'BuzzHeavier',
-            'ranoz': 'Ranoz',
         }
         for service, settings in self.__upload_hosts.items():
             if self.is_cancelled:
@@ -130,7 +129,7 @@ class HostUploader:
             enabled = True
             credential = settings[1]
             display = names.get(service)
-            self.__engine = f'Uploading to {display}' if display else 'Upload Host'
+            self.__engine = f'UploadHost ({display})' if display else 'UploadHost'
             self.total_files = self.total_folders = 0
             self.__processed_bytes = self.__file_base = self.__file_offset = 0
             self.__start_time = monotonic()
@@ -150,8 +149,6 @@ class HostUploader:
                     adapter = PixelDrain(self, credential)
                 elif service == 'buzzheavier':
                     adapter = BuzzHeavier(self, credential)
-                elif service == 'ranoz':
-                    adapter = Ranoz(self)
                 else:
                     safe_service = ''.join(c for c in str(service) if c.isascii() and (c.isalnum() or c in '_-'))[:40]
                     raise RuntimeError(f'Unsupported upload host: {safe_service or "unknown"}.')
@@ -201,10 +198,14 @@ class HostUploader:
         try:
             if self.is_cancelled:
                 raise asyncio.CancelledError
-            saved = user_data.get(self.__user_id, {}).get('upload_hosts', {})
-            self.__upload_hosts = {key: tuple(value) for key, value in saved.items()}
+            settings = user_data.get(self.__user_id, {})
+            saved = settings.get('upload_hosts', {})
+            self.__upload_hosts = {
+                key: (value[0], upload_host_credential(key, settings))
+                for key, value in saved.items() if key in HOST_CREDENTIAL_VARS
+            }
             if self.__host is not None:
-                credential = self.__upload_hosts.get(self.__host, (False, ''))[1]
+                credential = upload_host_credential(self.__host, settings)
                 self.__upload_hosts = {self.__host: (True, credential)}
             item_path = str(Path(self.__path) / file_name)
             mime_type = get_mime_type(item_path) if await aiopath.isfile(item_path) else 'Folder'

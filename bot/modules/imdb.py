@@ -6,6 +6,7 @@ from pycountry import countries as conn
 
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, regex
+from pyrogram.enums import ButtonStyle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 
@@ -175,10 +176,10 @@ async def imdb_callback(_, query):
         buttons = []
         if imdb['trailer']:
             if isinstance(imdb['trailer'], list):
-                buttons.append([InlineKeyboardButton("▶️ IMDb Trailer ", url=str(imdb['trailer'][-1]))])
+                buttons.append([InlineKeyboardButton("▶️ IMDb Trailer ", url=str(imdb['trailer'][-1]), style=ButtonStyle.PRIMARY)])
                 imdb['trailer'] = list_to_str(imdb['trailer'])
-            else: buttons.append([InlineKeyboardButton("▶️ IMDb Trailer ", url=str(imdb['trailer']))])
-        buttons.append([InlineKeyboardButton("🚫 Close 🚫", callback_data=f"imdb {user_id} close")])
+            else: buttons.append([InlineKeyboardButton("▶️ IMDb Trailer ", url=str(imdb['trailer']), style=ButtonStyle.PRIMARY)])
+        buttons.append([InlineKeyboardButton("🚫 Close 🚫", callback_data=f"imdb {user_id} close", style=ButtonStyle.PRIMARY)])
         template = ''
         #if int(data[1]) in user_data and user_data[int(data[1])].get('imdb_temp'):
         #    template = user_data[int(data[1])].get('imdb_temp')

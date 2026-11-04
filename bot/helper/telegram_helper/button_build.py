@@ -1,4 +1,25 @@
+from re import match
+from unicodedata import normalize
+
+from pyrogram.enums import ButtonStyle
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+
+def _button_style(button):
+    label = normalize('NFKC', str(button.text)).casefold()
+    data = button.callback_data
+    parts = data.casefold().split() if isinstance(data, str) else []
+    if match(r'^[^\w]*(cancel|delete|remove|disable|stop|unsubscribe|shutdown|permanent clean|move to bin)\b', label) or any(
+        part in {'cancel', 'scancel', 'dcancel'} for part in parts
+    ):
+        return ButtonStyle.DANGER
+    if label.startswith('✅') or match(r'^[^\w]*(enable|confirm|done|apply|activate|subscribe|start|resume)\b', label):
+        return ButtonStyle.SUCCESS
+    if button.url or match(r'^[^\w]*(back|next|previous|close|view|refresh)\b', label) or any(
+        part in {'back', 'close', 'pre', 'nex', 'ref'} for part in parts
+    ):
+        return ButtonStyle.PRIMARY
+    return ButtonStyle.DEFAULT
 
 
 class ButtonMaker:
@@ -61,4 +82,7 @@ class ButtonMaker:
                  for i in range(0, len(self.__footer_button), f_cols)]
             else:
                 menu.append(self.__footer_button)
+        for row in menu:
+            for button in row:
+                button.style = _button_style(button)
         return InlineKeyboardMarkup(menu)

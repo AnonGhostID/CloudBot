@@ -14,7 +14,7 @@ from signal import signal, SIGINT
 from aiofiles.os import path as aiopath, remove as aioremove
 from aiofiles import open as aiopen
 from pyrogram import idle
-from pyrogram.enums import ChatMemberStatus, ChatType
+from pyrogram.enums import ButtonStyle, ChatMemberStatus, ChatType
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, private, regex
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -81,7 +81,7 @@ async def token_callback(_, query):
     update_user_ldata(user_id, 'time', time())
     await query.answer('Activated Temporary Token!', show_alert=True)
     kb = query.message.reply_markup.inline_keyboard[1:]
-    kb.insert(0, [InlineKeyboardButton(BotTheme('ACTIVATED'), callback_data='pass activated')])
+    kb.insert(0, [InlineKeyboardButton(BotTheme('ACTIVATED'), callback_data='pass activated', style=ButtonStyle.SUCCESS)])
     await editReplyMarkup(query.message, InlineKeyboardMarkup(kb))
 
 

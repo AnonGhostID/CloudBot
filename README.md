@@ -10,6 +10,7 @@
 </p>
 
 Telegram replies, status messages, and media groups use Kurigram's reply and link-preview APIs.
+Telegram buttons use blue for navigation and links, green for confirmations and enabled selections, and red for destructive or stop actions. Colors depend on the Telegram client.
 
 <div align=center>
 
@@ -71,9 +72,9 @@ Telegram replies, status messages, and media groups use Kurigram's reply and lin
       <summary><b>Upload Hosts</b></summary>
 
     - Upload Files/Folder in the Supported Sites
-      - GoFile, StreamTape, PixelDrain, BuzzHeavier and Ranoz
+      - GoFile, StreamTape, PixelDrain and BuzzHeavier
     - Upload to enabled hosts or select one host per task
-    - Explicit host selections require saved credentials; StreamTape requires a saved login and API key
+    - Explicit host selections require user or shared config credentials; StreamTape requires a login and API key
     </details></li>
     <li><details>
       <summary><b>Google Drive</b></summary>
@@ -212,6 +213,8 @@ Telegram replies, status messages, and media groups use Kurigram's reply and lin
   > mediafire(folder), letsupload.io, streamtape.com, upload.ee, pixeldrain.com, pixeldra.in, buzzheavier.com, hxfile.co, filepress, racaty.net, 1fichier.com, 1drv.ms (Only works for file not folder or business account), uptobox.com and solidfiles.com, streamvid.net, linkbox.to, shrdsk.me (sharedisk.io), akmfiles.com, wetransfer.com, mdisk.me (with ytdl), gofile.io(folder), filelion, terabox.com (you need to add cookies txt with name) [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl) and almost every anonfiles based sites
 
   HXFile requires Netscape-format cookies in `hxfile.txt` in the bot's working directory. Upload it through the bot's private-file settings or mount it into the container.
+
+  PixelDrain file links are converted to `https://cdn.pixeldrain.eu.cc/<file-id>` for downloads.
 
   MediaFire links may require Cloudflare verification that the bot cannot complete. If so, open the page in a browser and send the direct download URL to the bot; direct URLs may expire.
 
@@ -453,7 +456,7 @@ help - All cmds with description
     - `SUDO_USERS`: Fill user_id of users whom you want to give sudo permission. Separate them by space. `Int`
     - `BLACKLIST_USERS` : Fill user_id of users you wish to prohibit from using the bot. Separate them by space. `Int`
     - `STATUS_LIMIT`: Limit the no. of tasks shown in status message with buttons. Default is `10`. **NOTE**: Recommended limit is `4` tasks. `Int`
-    - `DEFAULT_UPLOAD`: `rc` uploads to `RCLONE_PATH`, `gd` to `GDRIVE_ID`, `hosts` to enabled Upload Hosts, or `gf`, `bh`, `pd`, `rnz`, `stp` to one host. Default is `gd`. `Str`
+    - `DEFAULT_UPLOAD`: `rc` uploads to `RCLONE_PATH`, `gd` to `GDRIVE_ID`, `hosts` to enabled Upload Hosts, or `gf`, `bh`, `pd`, `stp` to one host. Default is `gd`. `Str`
     - `STATUS_UPDATE_INTERVAL`: Time in seconds after which the progress/status message will be updated. Recommended `10` seconds at least. `Int`
     - `AUTO_DELETE_MESSAGE_DURATION`: Interval of time (in seconds), after which the bot deletes it's message and command message which is expected to be viewed instantly. **NOTE**: Set to `-1` to disable auto message deletion. `Int`
     - `INCOMPLETE_TASK_NOTIFIER`: Get incomplete task messages after restart. Require database and superGroup. Default is `False`. `Bool`
@@ -706,12 +709,13 @@ python3 generate_drive_token.py
 - `RCLONE_PATH` is like `GDRIVE_ID` a default path for mirror. In additional to those variables `DEFAULT_UPLOAD` to choose the default tool whether it's rclone or google-api-python-client.
 - If `DEFAULT_UPLOAD` = 'rc' then you must fill `RCLONE_PATH` with path as default one or with `rcl` to select destination path on each new task.
 - If `DEFAULT_UPLOAD` = 'gd' then you must fill `GDRIVE_ID` with folder/TD id.
-- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, `rnz`, or `stp`) selects that host only.
+- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, or `stp`) selects that host only.
 - Existing `DEFAULT_UPLOAD=ddl` settings are migrated to `hosts`. If the value comes from an external environment, change it there to `hosts`.
 - `rclone.conf` can be added before deploy like `token.pickle` to repo folder root or use bsetting to upload it as private file.
 - If rclone.conf uploaded from usetting or added in `rclone/{user_id}.conf` then `RCLONE_PATH` must start with `mrcc:`.
 - Whenever you want to write path manually to use user rclone.conf that added from usetting then you must add the `mrcc:` at the beginning.
-- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up rnz` for Ranoz, or `-up stp` for StreamTape. Codes are case-insensitive and select only that host, even if its toggle is disabled. Each explicit selection requires saved credentials before downloading; StreamTape requires a saved `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, or `-up stp` for StreamTape. Codes are case-insensitive and select only that host, even if its toggle is disabled. Each explicit selection requires user or shared config credentials before downloading; StreamTape requires `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- Optional `GOFILE_API_KEY`, `PIXELDRAIN_API_KEY`, `BUZZHEAVIER_API_KEY`, and `STREAMTAPE_CREDENTIALS` (`login:key`) in `config.env` are shared fallbacks for all authorized users. Previously saved user credentials take precedence and can be deleted in User Settings, but new credentials are configured in `config.env`. Shared credentials do not enable hosts automatically; enable each host in User Settings for multi-host uploads.
 - PixelDrain uploads accept its HTTP 201 file-info response even when the `success` field is absent; a file ID is still required.
 - Other `-up` destinations are `gd` (GDRIVE_ID), `rc` (RCLONE_PATH), `rcl` (select an Rclone path), and `remote:path` or `mrcc:remote:path` for owner or user Rclone configurations.
 

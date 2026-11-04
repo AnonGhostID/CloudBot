@@ -22,10 +22,8 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.ext_utils.db_handler import DbManger
+from bot.helper.ext_utils.upload_hosts import HOST_CREDENTIAL_VARS, upload_host_credential
 from bot.helper.ext_utils.bot_utils import getdailytasks, update_user_ldata, get_readable_file_size, sync_to_async, new_thread, is_gdrive_link
-from bot.helper.mirror_utils.upload_utils.uploadserver.gofile import Gofile
-from bot.helper.mirror_utils.upload_utils.uploadserver.pixeldrain import PixelDrain
-from bot.helper.mirror_utils.upload_utils.uploadserver.buzzheavier import BuzzHeavier
 from bot.helper.themes import BotTheme
 
 handler_dict = {}
@@ -44,11 +42,10 @@ desp_dict = {'rcc': ['RClone is a command-line program to sync files and directo
             'split_size': ['Leech Splits Size is the size to split the Leeched File before uploading', f'Send Leech split size in any comfortable size, like 2Gb, 500MB or 1.46gB. \n<b>PREMIUM ACTIVE:</b> {IS_PREMIUM_USER}. \n<b>Timeout:</b> 60 sec'],
             'upload_hosts': ['Enable upload hosts for your mirrored files.', ''],
             'user_tds': [f'UserTD helps to Upload files via Bot to your Custom Drive Destination via Global SA mail\n\n➲ <b>SA Mail :</b> {"Not Specified" if "USER_TD_SA" not in config_dict else config_dict["USER_TD_SA"]}', 'Send User TD details for Use while Mirror/Clone\n➲ <b>Format:</b>\nname id/link index(optional)\nname2 link2/id2 index(optional)\n\n<b>NOTE:</b>\n<i>1. Drive ID must be valid, then only it will accept\n2. Names can have spaces\n3. All UserTDs are updated on every change\n4. To delete specific UserTD, give Name(s) separated by each line</i>\n\n<b>Timeout:</b> 60 sec'],
-            'gofile': ['Gofile is a free file sharing and storage platform. You can store and share your content without any limit.', "Send GoFile's API Key. Get it on https://gofile.io/myProfile, It will not be Accepted if the API Key is Invalid !!\n<b>Timeout:</b> 60 sec"],
-            'streamtape': ['Streamtape is free Video Streaming & sharing Hoster', "Send StreamTape's Login and Key\n<b>Format:</b> <code>user_login:pass_key</code>\n<b>Timeout:</b> 60 sec"],
-            'pixeldrain': ['PixelDrain is a file sharing service that makes sharing files easy', "Send PixelDrain's API Key. Get it on https://pixeldrain.com/api\n<b>Timeout:</b> 60 sec"],
-            'buzzheavier': ['BuzzHeavier is a free file sharing and storage platform. You can store and share your content without any limit.', "Send BuzzHeavier's API Key. Get it on https://buzzheavier.com/myProfile, It will not be Accepted if the API Key is Invalid !!\n<b>Timeout:</b> 60 sec"],
-            'ranoz': ['Ranoz is a free file sharing and storage platform with secure upload capabilities.', "Send Ranoz's API Key.\n<b>Timeout:</b> 60 sec"],
+            'gofile': ['Gofile is a free file sharing and storage platform. You can store and share your content without any limit.', ''],
+            'streamtape': ['Streamtape is free Video Streaming & sharing Hoster', ''],
+            'pixeldrain': ['PixelDrain is a file sharing service that makes sharing files easy', ''],
+            'buzzheavier': ['BuzzHeavier is a free file sharing and storage platform. You can store and share your content without any limit.', ''],
             }
 fname_dict = {'rcc': 'RClone',
              'lprefix': 'Prefix',
@@ -69,7 +66,6 @@ fname_dict = {'rcc': 'RClone',
              'streamtape': 'StreamTape',
              'pixeldrain': 'PixelDrain',
              'buzzheavier': 'BuzzHeavier',
-             'ranoz': 'Ranoz',
              }
 
 async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None):
@@ -130,7 +126,7 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
         buttons.ibutton("Mirror Remname", f"userset {user_id} mremname")
         mremname = 'Not Exists' if (val:=user_dict.get('mremname', config_dict.get('MIRROR_FILENAME_REMNAME', ''))) == '' else val
 
-        host_count = len(val) if (val := user_dict.get('upload_hosts', False)) else 0
+        host_count = sum(host in HOST_CREDENTIAL_VARS for host in user_dict.get('upload_hosts', {}))
         buttons.ibutton("Upload Hosts", f"userset {user_id} upload_hosts")
         
         tds_mode = "Enabled" if user_dict.get('td_mode', False) else "Disabled"
@@ -193,13 +189,13 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
         host_count, serv_list = 0, []
         if (hosts := user_dict.get('upload_hosts', False)):
             for serv, (enabled, _) in hosts.items():
-                if enabled:
+                if enabled and serv in HOST_CREDENTIAL_VARS:
                     serv_list.append(serv)
                     host_count += 1
         text = f"㊂ <b><u>{fname_dict[key]} Settings :</u></b>\n\n" \
                f"➲ <b>Enabled Upload Hosts :</b> <i>{host_count}</i>\n\n" \
                f"➲ <b>Description :</b> <i>{desp_dict[key][0]}</i>"
-        for btn in ['gofile', 'pixeldrain', 'buzzheavier', 'ranoz', 'streamtape']:
+        for btn in ['gofile', 'pixeldrain', 'buzzheavier', 'streamtape']:
             buttons.ibutton(f"{'✅️' if btn in serv_list else ''} {fname_dict[btn]}", f"userset {user_id} {btn}")
         buttons.ibutton("Back", f"userset {user_id} back mirror", "footer")
         buttons.ibutton("Close", f"userset {user_id} close", "footer")
@@ -237,10 +233,10 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
         elif key in ['mprefix', 'mremname', 'msuffix']:
             set_exist = 'Not Exists' if (val:=user_dict.get(key, config_dict.get(f'MIRROR_FILENAME_{key[1:].upper()}', ''))) == '' else val
             text += f"➲ <b>Mirror Filename {fname_dict[key]} :</b> {set_exist}\n\n"
-        elif key in ['gofile', 'pixeldrain', 'buzzheavier', 'ranoz', 'streamtape']:
+        elif key in HOST_CREDENTIAL_VARS:
             hosts = user_dict.get('upload_hosts', {})
             enabled, credential = hosts.get(key, [False, ''])
-            set_exist = 'Exists' if credential else 'Not Exists'
+            set_exist = 'Exists' if credential else 'Configured globally' if upload_host_credential(key, user_dict) else 'Not Exists'
             host_mode = 'Enabled' if enabled else 'Disabled'
             credential_label = 'Login / API Key' if key == 'streamtape' else 'API Key'
             text = f"➲ <b>Upload: {fname_dict[key]}</b>\n➲ <b>Status :</b> {host_mode}\n" \
@@ -257,12 +253,13 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
         else: 
             return
         text += f"➲ <b>Description :</b> <i>{desp_dict[key][0]}</i>"
-        if not edit_mode:
+        is_host = key in HOST_CREDENTIAL_VARS
+        if not edit_mode and not is_host:
             buttons.ibutton(f"Change {fname_dict[key]}" if set_exist and set_exist != 'Not Exists' and (set_exist != get_readable_file_size(config_dict['LEECH_SPLIT_SIZE']) + ' (Default)') else f"Set {fname_dict[key]}", f"userset {user_id} {key} edit")
-        else:
+        elif edit_mode and not is_host:
             text += '\n\n' + desp_dict[key][1]
             buttons.ibutton("Stop Change", f"userset {user_id} {key}")
-        if set_exist and set_exist != 'Not Exists' and (set_exist != get_readable_file_size(config_dict['LEECH_SPLIT_SIZE']) + ' (Default)'):
+        if (credential if is_host else set_exist and set_exist != 'Not Exists' and (set_exist != get_readable_file_size(config_dict['LEECH_SPLIT_SIZE']) + ' (Default)')):
             if key == 'thumb':
                 buttons.ibutton("View Thumbnail", f"userset {user_id} vthumb", "header")
             elif key == 'user_tds':
@@ -321,16 +318,7 @@ async def set_custom(client, message, pre_event, key, direct=False):
     return_key = 'leech'
     n_key = key
     user_dict = user_data.get(user_id, {})
-    if key in ['gofile', 'pixeldrain', 'buzzheavier', 'ranoz', 'streamtape']:
-        hosts = user_dict.get('upload_hosts', {})
-        mode, api = hosts.get(key, [False, ""])
-        if key == "gofile" and not await Gofile.is_goapi(value):
-            value = ""
-        hosts[key] = [mode, value]
-        value = hosts
-        n_key = 'upload_hosts'
-        return_key = 'upload_hosts'
-    elif key == 'user_tds':
+    if key == 'user_tds':
         user_tds = user_dict.get(key, {})
         for td_item in value.split('\n'):
             if td_item == '':
@@ -575,13 +563,13 @@ async def edit_user_settings(client, query):
         await update_user_settings(query, 'leech')
         if DATABASE_URL:
             await DbManger().update_user_data(user_id)
-    elif data[2] in ['sgofile', 'spixeldrain', 'sbuzzheavier', 'sranoz', 'sstreamtape', 'dgofile', 'dpixeldrain', 'dbuzzheavier', 'dranoz', 'dstreamtape']:
+    elif data[2] in ['sgofile', 'spixeldrain', 'sbuzzheavier', 'sstreamtape', 'dgofile', 'dpixeldrain', 'dbuzzheavier', 'dstreamtape']:
         handler_dict[user_id] = False
         hosts = user_dict.get('upload_hosts', {})
         key = data[2][1:]  # This removes the 's' or 'd' prefix
         mode, api = hosts.get(key, [False, ""])
         if data[2][0] == 's':
-            if not mode and api == '':
+            if not mode and not upload_host_credential(key, user_dict):
                 if key in ['pixeldrain']:  # Add this check
                     return await query.answer(f'{fname_dict[key]} API Key is required!', show_alert=True)
             hosts[key] = [not mode, api]
@@ -612,10 +600,12 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ['upload_hosts', 'user_tds', 'gofile', 'pixeldrain', 'buzzheavier', 'ranoz', 'streamtape']:
+    elif data[2] in ['upload_hosts', 'user_tds', 'gofile', 'pixeldrain', 'buzzheavier', 'streamtape']:
         handler_dict[user_id] = False
         await query.answer()
         edit_mode = len(data) == 4
+        if data[2] in HOST_CREDENTIAL_VARS:
+            edit_mode = False
         await update_user_settings(query, data[2], 'mirror' if data[2] in ['upload_hosts', 'user_tds'] else 'upload_hosts', edit_mode)
         if not edit_mode: return
         pfunc = partial(set_custom, pre_event=query, key=data[2])

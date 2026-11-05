@@ -6,12 +6,12 @@ from yt_dlp import YoutubeDL, DownloadError
 from re import search as re_search
 from ast import literal_eval
 
-from bot import download_dict_lock, download_dict, non_queued_dl, queue_dict_lock
+from bot import download_dict_lock, download_dict
 from bot.helper.telegram_helper.message_utils import sendStatusMessage
 from ..status_utils.yt_dlp_download_status import YtDlpDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.ext_utils.bot_utils import sync_to_async, async_to_sync
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker, queue_guard, wait_for_queue
 
 LOGGER = getLogger(__name__)
 
@@ -171,11 +171,14 @@ class YoutubeDLHelper:
 
     async def __onDownloadStart(self, from_queue=False):
         async with download_dict_lock:
+            if from_queue and self.__listener.uid not in download_dict:
+                return False
             download_dict[self.__listener.uid] = YtDlpDownloadStatus(
                 self, self.__listener, self.__gid)
         if not from_queue:
             await self.__listener.onDownloadStart()
             await sendStatusMessage(self.__listener.message)
+        return True
 
     def __onDownloadError(self, error):
         self.__is_cancelled = True
@@ -239,6 +242,7 @@ class YoutubeDLHelper:
         except ValueError:
             self.__onDownloadError("Download Stopped by User!")
 
+    @queue_guard(lambda self, link, path, name, qual, playlist, options: self.__listener.uid)
     async def add_download(self, link, path, name, qual, playlist, options):
         if playlist:
             self.opts['ignoreerrors'] = True
@@ -316,17 +320,16 @@ class YoutubeDLHelper:
             async with download_dict_lock:
                 download_dict[self.__listener.uid] = QueueStatus(
                     self.name, self.__size, self.__gid, self.__listener, 'dl')
-            await event.wait()
+            if not await wait_for_queue(self.__listener.uid, event):
+                return
             async with download_dict_lock:
                 if self.__listener.uid not in download_dict:
                     return
             LOGGER.info(f'Start Queued Download from YT_DLP: {self.name}')
-            await self.__onDownloadStart(True)
+            if not await self.__onDownloadStart(True):
+                return
         else:
             LOGGER.info(f'Download with YT_DLP: {self.name}')
-
-        async with queue_dict_lock:
-            non_queued_dl.add(self.__listener.uid)
 
         await sync_to_async(self.__download, link, path)
 

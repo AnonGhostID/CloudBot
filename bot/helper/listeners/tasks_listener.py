@@ -10,19 +10,18 @@ from aiofiles.os import path as aiopath, remove as aioremove, listdir, makedirs
 from os import walk, path as ospath
 from html import escape
 from aioshutil import move
-from asyncio import create_subprocess_exec, sleep, Event
+from asyncio import create_subprocess_exec, sleep
 from pyrogram.enums import ChatType
 
 from bot import OWNER_ID, Interval, aria2, DOWNLOAD_DIR, download_dict, download_dict_lock, LOGGER, bot_name, DATABASE_URL, \
-    MAX_SPLIT_SIZE, config_dict, status_reply_dict_lock, user_data, non_queued_up, non_queued_dl, queued_up, \
-    queued_dl, queue_dict_lock, bot, GLOBAL_EXTENSION_FILTER
+    MAX_SPLIT_SIZE, config_dict, status_reply_dict_lock, user_data, bot, GLOBAL_EXTENSION_FILTER
 from bot.helper.ext_utils.bot_utils import extra_btns, sync_to_async, get_readable_file_size, get_readable_time, is_gdrive_link
 from bot.helper.ext_utils.upload_hosts import resolve_upload_host
 from bot.helper.ext_utils.fs_utils import get_base_name, get_path_size, clean_download, clean_target, \
     is_first_archive_split, is_archive, is_archive_split, join_files
 from bot.helper.ext_utils.leech_utils import split_file, format_filename
 from bot.helper.ext_utils.exceptions import NotSupportedExtractionArchive
-from bot.helper.ext_utils.task_manager import start_from_queued
+from bot.helper.ext_utils.task_manager import is_queued, queue_guard, release_queue, wait_for_queue
 from bot.helper.mirror_utils.status_utils.extract_status import ExtractStatus
 from bot.helper.mirror_utils.status_utils.zip_status import ZipStatus
 from bot.helper.mirror_utils.status_utils.split_status import SplitStatus
@@ -146,6 +145,7 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManger().add_incomplete_task(self.message.chat.id, self.message.link, self.tag, self.source_url, self.message.text)
 
+    @queue_guard(lambda self: self.uid)
     async def onDownloadComplete(self):
         multi_links = False
         while True:
@@ -192,10 +192,7 @@ class MirrorLeechListener:
         dl_path = f"{self.dir}/{name}"
         up_path = ''
         size = await get_path_size(dl_path)
-        async with queue_dict_lock:
-            if self.uid in non_queued_dl:
-                non_queued_dl.remove(self.uid)
-        await start_from_queued()
+        await release_queue(self.uid, 'dl')
         user_dict = user_data.get(self.message.from_user.id, {})
         
         if self.join and await aiopath.isdir(dl_path):
@@ -352,28 +349,21 @@ class MirrorLeechListener:
                                 m_size.append(f_size)
                                 o_files.append(file_)
 
-        up_limit = config_dict['QUEUE_UPLOAD']
-        all_limit = config_dict['QUEUE_ALL']
-        added_to_queue = False
-        async with queue_dict_lock:
-            dl = len(non_queued_dl)
-            up = len(non_queued_up)
-            if (all_limit and dl + up >= all_limit and (not up_limit or up >= up_limit)) or (up_limit and up >= up_limit):
-                added_to_queue = True
-                LOGGER.info(f"Added to Queue/Upload: {name}")
-                event = Event()
-                queued_up[self.uid] = event
-        if added_to_queue:
-            async with download_dict_lock:
+        async with download_dict_lock:
+            if self.uid not in download_dict:
+                return
+            added_to_queue, event = await is_queued(self.uid, 'up')
+            if added_to_queue:
                 download_dict[self.uid] = QueueStatus(
                     name, size, gid, self, 'Up')
-            await event.wait()
+        if added_to_queue:
+            LOGGER.info(f"Added to Queue/Upload: {name}")
+            if not await wait_for_queue(self.uid, event, 'up'):
+                return
             async with download_dict_lock:
                 if self.uid not in download_dict:
                     return
             LOGGER.info(f'Start from Queued/Upload: {name}')
-        async with queue_dict_lock:
-            non_queued_up.add(self.uid)
         if self.isLeech:
             size = await get_path_size(up_dir)
             for s in m_size:
@@ -383,6 +373,8 @@ class MirrorLeechListener:
             tg_upload_status = TelegramStatus(
                 tg, size, self.message, gid, 'up', self.upload_details)
             async with download_dict_lock:
+                if self.uid not in download_dict:
+                    return
                 download_dict[self.uid] = tg_upload_status
             await update_all_messages()
             await tg.upload(o_files, m_size, size)
@@ -392,6 +384,8 @@ class MirrorLeechListener:
             drive = GoogleDriveHelper(up_name, up_dir, self)
             upload_status = GdriveStatus(drive, size, self.message, gid, 'up', self.upload_details)
             async with download_dict_lock:
+                if self.uid not in download_dict:
+                    return
                 download_dict[self.uid] = upload_status
             await update_all_messages()
 
@@ -402,6 +396,8 @@ class MirrorLeechListener:
             host_uploader = HostUploader(self, up_name, up_dir, host=resolve_upload_host(self.upPath))
             host_upload_status = HostUploadStatus(host_uploader, size, self.message, gid, self.upload_details)
             async with download_dict_lock:
+                if self.uid not in download_dict:
+                    return
                 download_dict[self.uid] = host_upload_status
             await update_all_messages()
             await host_uploader.upload(up_name, size)
@@ -410,6 +406,8 @@ class MirrorLeechListener:
             LOGGER.info(f"Upload Name: {up_name} via RClone")
             RCTransfer = RcloneTransferHelper(self, up_name)
             async with download_dict_lock:
+                if self.uid not in download_dict:
+                    return
                 download_dict[self.uid] = RcloneStatus(
                     RCTransfer, self.message, gid, 'up', self.upload_details)
             await update_all_messages()
@@ -488,10 +486,7 @@ class MirrorLeechListener:
             if self.seed:
                 if self.newDir:
                     await clean_target(self.newDir)
-                async with queue_dict_lock:
-                    if self.uid in non_queued_up:
-                        non_queued_up.remove(self.uid)
-                await start_from_queued()
+                await release_queue(self.uid, 'up')
                 return
         else:
             msg += BotTheme('M_TYPE', Mimetype=mime_type)
@@ -595,10 +590,7 @@ class MirrorLeechListener:
                     await clean_target(self.newDir)
                 elif self.compress:
                     await clean_target(f"{self.dir}/{name}")
-                async with queue_dict_lock:
-                    if self.uid in non_queued_up:
-                        non_queued_up.remove(self.uid)
-                await start_from_queued()
+                await release_queue(self.uid, 'up')
                 return
         
         if self.botpmmsg and (not config_dict['DELETE_LINKS'] or config_dict['CLEAN_LOG_MSG']):
@@ -614,11 +606,7 @@ class MirrorLeechListener:
         else:
             await update_all_messages()
 
-        async with queue_dict_lock:
-            if self.uid in non_queued_up:
-                non_queued_up.remove(self.uid)
-
-        await start_from_queued()
+        await release_queue(self.uid, 'up')
         await delete_links(self.message)
 
 
@@ -630,6 +618,7 @@ class MirrorLeechListener:
             if self.sameDir and self.uid in self.sameDir['tasks']:
                 self.sameDir['tasks'].remove(self.uid)
                 self.sameDir['total'] -= 1
+        await release_queue(self.uid)
         msg = f'''<i><b>Download Stopped!</b></i>
 ┠ <b>Task for:</b> {self.tag}
 ┃
@@ -645,19 +634,6 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManger().rm_complete_task(self.message.link)
 
-        async with queue_dict_lock:
-            if self.uid in queued_dl:
-                queued_dl[self.uid].set()
-                del queued_dl[self.uid]
-            if self.uid in queued_up:
-                queued_up[self.uid].set()
-                del queued_up[self.uid]
-            if self.uid in non_queued_dl:
-                non_queued_dl.remove(self.uid)
-            if self.uid in non_queued_up:
-                non_queued_up.remove(self.uid)
-
-        await start_from_queued()
         await sleep(3)
         await clean_download(self.dir)
         if self.newDir:
@@ -668,6 +644,7 @@ class MirrorLeechListener:
             if self.uid in download_dict.keys():
                 del download_dict[self.uid]
             count = len(download_dict)
+        await release_queue(self.uid)
         msg = f'''<i><b>Upload Stopped!</b></i>
 ┠ <b>Task for:</b> {self.tag}
 ┃
@@ -683,19 +660,6 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManger().rm_complete_task(self.message.link)
 
-        async with queue_dict_lock:
-            if self.uid in queued_dl:
-                queued_dl[self.uid].set()
-                del queued_dl[self.uid]
-            if self.uid in queued_up:
-                queued_up[self.uid].set()
-                del queued_up[self.uid]
-            if self.uid in non_queued_dl:
-                non_queued_dl.remove(self.uid)
-            if self.uid in non_queued_up:
-                non_queued_up.remove(self.uid)
-
-        await start_from_queued()
         await sleep(3)
         await clean_download(self.dir)
         if self.newDir:

@@ -5,15 +5,15 @@ from json import loads
 from os import path
 from uuid import uuid4
 from hashlib import pbkdf2_hmac, sha256
-from time import sleep, time
+from time import monotonic, sleep, time
 from re import findall, match, search
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from lxml.etree import HTML
-from requests import Session, session as req_session, post, get, RequestException
+from requests import Session as RequestsSession, post as requests_post, get as requests_get, RequestException
 from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin
-from cloudscraper import create_scraper
+from cloudscraper import create_scraper as cloudscraper_create_scraper
 from cloudscraper.exceptions import CloudflareException
 from http.cookiejar import MozillaCookieJar
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -24,6 +24,42 @@ from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
 
 _caches = {}
+HTTP_TIMEOUT = 30
+REAL_DEBRID_POLL_TIMEOUT = 300
+
+
+class Session(RequestsSession):
+    def request(self, method, url, **kwargs):
+        if kwargs.get('timeout') is None:
+            kwargs['timeout'] = HTTP_TIMEOUT
+        return super().request(method, url, **kwargs)
+
+
+def create_scraper(*args, **kwargs):
+    scraper = cloudscraper_create_scraper(*args, **kwargs)
+    request = scraper.request
+
+    def bounded_request(method, url, **request_kwargs):
+        if request_kwargs.get('timeout') is None:
+            request_kwargs['timeout'] = HTTP_TIMEOUT
+        return request(method, url, **request_kwargs)
+
+    scraper.request = bounded_request
+    return scraper
+
+
+def get(url, **kwargs):
+    if kwargs.get('timeout') is None:
+        kwargs['timeout'] = HTTP_TIMEOUT
+    return requests_get(url, **kwargs)
+
+
+def post(url, **kwargs):
+    if kwargs.get('timeout') is None:
+        kwargs['timeout'] = HTTP_TIMEOUT
+    return requests_post(url, **kwargs)
+
+
 user_agent = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 )
@@ -105,12 +141,12 @@ debrid_link_sites = ["1dl.net", "1fichier.com", "alterupload.com", "cjoint.net",
                 "yahoo.com", "screen.yahoo.com", "news.yahoo.com", "sports.yahoo.com", "video.yahoo.com", "youporn.com"]
 
 
-def direct_link_generator(link):
+def direct_link_generator(link, cancel_event=None):
     auth = None
     if isinstance(link, tuple):
         link, auth = link
     if is_magnet(link):
-        return real_debrid(link, True)
+        return real_debrid(link, True, cancel_event)
 
     domain = urlparse(link).hostname
     if not domain:
@@ -214,12 +250,21 @@ def direct_link_generator(link):
 
 
 
-def real_debrid(url: str, tor=False):
+def real_debrid(url: str, tor=False, cancel_event=None):
     """ Real-Debrid Link Extractor (VPN Maybe Needed)
     Based on Real-Debrid v1 API (Heroku/VPS) [Without VPN]"""
+    scraper = create_scraper()
+
+    def request(*args, **kwargs):
+        if cancel_event and cancel_event.is_set():
+            raise DirectDownloadLinkException("ERROR: Real-Debrid resolution cancelled")
+        response = scraper.request(*args, **kwargs)
+        if cancel_event and cancel_event.is_set():
+            raise DirectDownloadLinkException("ERROR: Real-Debrid resolution cancelled")
+        return response
+
     def __unrestrict(url, tor=False):
-        cget = create_scraper().request
-        resp = cget('POST', f"https://api.real-debrid.com/rest/1.0/unrestrict/link?auth_token={config_dict['REAL_DEBRID_API']}", data={'link': url})
+        resp = request('POST', f"https://api.real-debrid.com/rest/1.0/unrestrict/link?auth_token={config_dict['REAL_DEBRID_API']}", data={'link': url})
         if resp.status_code == 200:
             if tor:
                 _res = resp.json()
@@ -230,7 +275,7 @@ def real_debrid(url: str, tor=False):
             raise DirectDownloadLinkException(f"ERROR: {resp.json()['error']}")
             
     def __addMagnet(magnet):
-        cget = create_scraper().request
+        cget = request
         hash_ = search(r'(?<=xt=urn:btih:)[a-zA-Z0-9]+', magnet).group(0)
         resp = cget('GET', f"https://api.real-debrid.com/rest/1.0/torrents/instantAvailability/{hash_}?auth_token={config_dict['REAL_DEBRID_API']}")
         if resp.status_code != 200 or len(resp.json()[hash_.lower()]['rd']) == 0:
@@ -243,16 +288,37 @@ def real_debrid(url: str, tor=False):
         if _id:
             _file = cget('POST', f"https://api.real-debrid.com/rest/1.0/torrents/selectFiles/{_id}?auth_token={config_dict['REAL_DEBRID_API']}", data={'files': 'all'})
             if _file.status_code != 204:
-                raise DirectDownloadLinkException(f"ERROR: {resp.json()['error']}")
+                raise DirectDownloadLinkException(f"ERROR: {_file.json()['error']}")
             
         contents = {'links': []}
+        deadline = monotonic() + REAL_DEBRID_POLL_TIMEOUT
         while len(contents['links']) == 0:
-            _res = cget('GET', f"https://api.real-debrid.com/rest/1.0/torrents/info/{_id}?auth_token={config_dict['REAL_DEBRID_API']}")
+            if cancel_event and cancel_event.is_set():
+                raise DirectDownloadLinkException("ERROR: Real-Debrid resolution cancelled")
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise DirectDownloadLinkException("ERROR: Real-Debrid resolution timed out")
+            _res = cget('GET', f"https://api.real-debrid.com/rest/1.0/torrents/info/{_id}?auth_token={config_dict['REAL_DEBRID_API']}", timeout=min(HTTP_TIMEOUT, remaining))
             if _res.status_code == 200:
                 contents = _res.json()
             else:
                 raise DirectDownloadLinkException(f"ERROR: {_res.json()['error']}")
-            sleep(0.5)
+            if cancel_event and cancel_event.is_set():
+                raise DirectDownloadLinkException("ERROR: Real-Debrid resolution cancelled")
+            if contents.get('status') in ('error', 'virus', 'dead', 'magnet_error'):
+                raise DirectDownloadLinkException(f"ERROR: Real-Debrid torrent status: {contents['status']}")
+            if contents['links']:
+                break
+            if contents.get('status') == 'downloaded':
+                raise DirectDownloadLinkException("ERROR: Real-Debrid torrent completed without links")
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise DirectDownloadLinkException("ERROR: Real-Debrid resolution timed out")
+            if cancel_event:
+                if cancel_event.wait(min(0.5, remaining)):
+                    raise DirectDownloadLinkException("ERROR: Real-Debrid resolution cancelled")
+            else:
+                sleep(min(0.5, remaining))
         
         details = {'contents': [], 'title': contents['original_filename'], 'total_size': contents['bytes']}
 

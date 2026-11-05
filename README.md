@@ -292,8 +292,12 @@ sudo docker build . -t cloudbot
 - Run the image with your configuration mounted at runtime (it is excluded from the build context):
 
 ```
-sudo docker run -v "$(pwd)/config.env:/usr/src/app/config.env" -p 80:80 -p 8080:8080 cloudbot
+sudo docker run --cap-drop=ALL --security-opt=no-new-privileges -v "$(pwd)/config.env:/usr/src/app/config.env" -p 80:80 -p 8080:8080 cloudbot
 ```
+
+- Docker builds exclude local credentials and runtime data, including `token.pickle`, `accounts/`, `rclone.conf`, cookies, and Telegram session files. Mount any files needed by your deployment at their paths under `/usr/src/app`, or upload private files through bot settings. For example, add `-v "$(pwd)/token.pickle:/usr/src/app/token.pickle"` for Google Drive OAuth.
+- The Docker example and Compose configuration drop Linux capabilities and prevent privilege escalation. The image still runs as root; isolate writable mounts and network access accordingly.
+- Existing images built before these exclusions may contain private files. Inspect image layers before sharing them and rotate any credentials found in a published image.
 
 - To stop the running image:
 
@@ -540,9 +544,12 @@ help - All cmds with description
     <li><details>
         <summary><b>Queue System</b></summary>
 
-    - `QUEUE_ALL`: Number of parallel tasks of downloads and uploads. For example if 20 task added and `QUEUE_ALL` is `8`, then the summation of uploading and downloading tasks are 8 and the rest in queue. `Int`. **NOTE**: if you want to fill `QUEUE_DOWNLOAD` or `QUEUE_UPLOAD`, then `QUEUE_ALL` value must be greater than or equal to the greatest one and less than or equal to summation of `QUEUE_UPLOAD` and `QUEUE_DOWNLOAD`.
+    - `QUEUE_ALL`: Maximum combined number of active downloads and uploads. `QUEUE_DOWNLOAD` and `QUEUE_UPLOAD` are independent limits that also apply when set. An unset or zero limit is unlimited. `Int`
     - `QUEUE_DOWNLOAD`: Number of all parallel downloading tasks. `Int`
     - `QUEUE_UPLOAD`: Number of all parallel uploading tasks. `Int`
+
+    Direct multi-file downloads fail if any file cannot be downloaded; the error identifies the failed files instead of uploading an incomplete result.
+    Direct-link resolver requests use a 30-second timeout. Real-Debrid magnet polling stops after five minutes, on a terminal provider error, or when the task is cancelled.
 
     </details></li>
     <li><details>
@@ -692,7 +699,7 @@ python3 generate_drive_token.py
 - If `DEFAULT_UPLOAD` = 'gd' then you must fill `GDRIVE_ID` with folder/TD id.
 - If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, `stp`, or `ab`) selects that host only.
 - Existing `DEFAULT_UPLOAD=ddl` settings are migrated to `hosts`. If the value comes from an external environment, change it there to `hosts`.
-- `rclone.conf` can be added before deploy like `token.pickle` to repo folder root or use bsetting to upload it as private file.
+- Mount `rclone.conf` at `/usr/src/app/rclone.conf` when running the Docker container, or use bot settings to upload it as a private file.
 - If rclone.conf uploaded from usetting or added in `rclone/{user_id}.conf` then `RCLONE_PATH` must start with `mrcc:`.
 - Whenever you want to write path manually to use user rclone.conf that added from usetting then you must add the `mrcc:` at the beginning.
 - Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up stp` for StreamTape, or `-up ab` for AkiraBox. Codes are case-insensitive and select only that host, even if its toggle is disabled. AkiraBox needs no credentials; other explicit selections require user or shared config credentials before downloading. StreamTape requires `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.

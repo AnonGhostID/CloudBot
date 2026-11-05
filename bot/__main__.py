@@ -271,13 +271,18 @@ async def main():
     signal(SIGINT, exit_clean_up)
 
 async def stop_signals():
-    if user:
-        await gather(bot.stop(), user.stop())
-    else:
-        await bot.stop()
+    try:
+        if user:
+            await gather(bot.stop(), user.stop())
+        else:
+            await bot.stop()
+    finally:
+        await DbManger.close()
 
 
 bot_run = bot.loop.run_until_complete
-bot_run(main())
-bot_run(idle())
-bot_run(stop_signals())
+try:
+    bot_run(main())
+    bot_run(idle())
+finally:
+    bot_run(stop_signals())

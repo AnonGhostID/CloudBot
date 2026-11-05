@@ -3,15 +3,16 @@ from asyncio import gather
 from json import loads
 from secrets import token_hex
 
-from bot import download_dict, download_dict_lock, queue_dict_lock, non_queued_dl, LOGGER
+from bot import download_dict, download_dict_lock, LOGGER
 from bot.helper.ext_utils.bot_utils import cmd_exec
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
+from bot.helper.ext_utils.task_manager import is_queued, queue_guard, stop_duplicate_check, wait_for_queue
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 
 
+@queue_guard(lambda rc_path, config_path, path, name, listener: listener.uid)
 async def add_rclone_download(rc_path, config_path, path, name, listener):
     remote, rc_path = rc_path.split(':', 1)
     rc_path = rc_path.strip('/')
@@ -54,7 +55,8 @@ async def add_rclone_download(rc_path, config_path, path, name, listener):
                 name, size, gid, listener, 'dl')
         await listener.onDownloadStart()
         await sendStatusMessage(listener.message)
-        await event.wait()
+        if not await wait_for_queue(listener.uid, event):
+            return
         async with download_dict_lock:
             if listener.uid not in download_dict:
                 return
@@ -64,11 +66,10 @@ async def add_rclone_download(rc_path, config_path, path, name, listener):
 
     RCTransfer = RcloneTransferHelper(listener, name)
     async with download_dict_lock:
+        if from_queue and listener.uid not in download_dict:
+            return
         download_dict[listener.uid] = RcloneStatus(
             RCTransfer, listener.message, gid, 'dl', listener.upload_details)
-    async with queue_dict_lock:
-        non_queued_dl.add(listener.uid)
-
     if from_queue:
         LOGGER.info(f'Start Queued Download with rclone: {rc_path}')
     else:

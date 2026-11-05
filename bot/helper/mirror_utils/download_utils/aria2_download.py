@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 from aiofiles.os import remove as aioremove, path as aiopath
 
-from bot import aria2, download_dict_lock, download_dict, LOGGER, config_dict, aria2_options, aria2c_global, non_queued_dl, queue_dict_lock
+from bot import aria2, download_dict_lock, download_dict, LOGGER, config_dict, aria2_options, aria2c_global
 from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
 from bot.helper.mirror_utils.status_utils.aria2_status import Aria2Status
 from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage
-from bot.helper.ext_utils.task_manager import is_queued
+from bot.helper.ext_utils.task_manager import is_queued, queue_guard, release_queue, wait_for_queue
 
 
+@queue_guard(lambda link, path, listener, filename, header, ratio, seed_time: listener.uid)
 async def add_aria2c_download(link, path, listener, filename, header, ratio, seed_time):
     a2c_opt = {**aria2_options}
     [a2c_opt.pop(k) for k in aria2c_global if k in aria2_options]
@@ -31,12 +32,17 @@ async def add_aria2c_download(link, path, listener, filename, header, ratio, see
     try:
         download = (await sync_to_async(aria2.add, link, a2c_opt))[0]
     except Exception as e:
+        await release_queue(listener.uid, 'dl')
         LOGGER.info(f"Aria2c Download Error: {e}")
         await sendMessage(listener.message, f'{e}')
         return
+    except BaseException:
+        await release_queue(listener.uid, 'dl')
+        raise
     if await aiopath.exists(link):
         await aioremove(link)
     if download.error_message:
+        await release_queue(listener.uid, 'dl')
         error = str(download.error_message).replace('<', ' ').replace('>', ' ')
         LOGGER.info(f"Aria2c Download Error: {error}")
         await sendMessage(listener.message, error)
@@ -52,8 +58,6 @@ async def add_aria2c_download(link, path, listener, filename, header, ratio, see
         if not listener.select or not download.is_torrent:
             await sendStatusMessage(listener.message)
     else:
-        async with queue_dict_lock:
-            non_queued_dl.add(listener.uid)
         LOGGER.info(f"Aria2Download started: {name}. Gid: {gid}")
 
     await listener.onDownloadStart()
@@ -68,7 +72,8 @@ async def add_aria2c_download(link, path, listener, filename, header, ratio, see
         await sendMessage(listener.message, msg, SBUTTONS)
 
     if added_to_queue:
-        await event.wait()
+        if not await wait_for_queue(listener.uid, event):
+            return
 
         async with download_dict_lock:
             if listener.uid not in download_dict:
@@ -80,5 +85,3 @@ async def add_aria2c_download(link, path, listener, filename, header, ratio, see
         await sync_to_async(aria2.client.unpause, new_gid)
         LOGGER.info(f'Start Queued Download from Aria2c: {name}. Gid: {gid}')
 
-        async with queue_dict_lock:
-            non_queued_dl.add(listener.uid)

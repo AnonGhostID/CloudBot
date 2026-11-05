@@ -1,17 +1,35 @@
+from ntpath import splitdrive
+from pathlib import Path
 from time import sleep
 
 from bot import LOGGER, aria2
 from bot.helper.ext_utils.bot_utils import async_to_sync, sync_to_async
 
 
+def safe_download_path(root, directory, filename):
+    if (not isinstance(directory, str) or not isinstance(filename, str)
+            or not filename or filename in ('.', '..')
+            or '/' in filename or '\\' in filename or '\0' in filename
+            or splitdrive(filename)[0]):
+        raise ValueError('Invalid download filename')
+    if ('\\' in directory or '\0' in directory or directory.startswith('/')
+            or splitdrive(directory)[0] or '..' in directory.split('/')):
+        raise ValueError('Invalid download directory')
+    root = Path(root).resolve()
+    target = (root / directory / filename).resolve()
+    if not target.is_relative_to(root) or target == root:
+        raise ValueError('Download path escapes its destination')
+    return root / directory / filename
+
+
 class DirectListener:
     def __init__(self, foldername, total_size, path, listener, a2c_opt):
-        self.__path = path
+        self.__path = Path(path).resolve()
         self.__listener = listener
         self.__is_cancelled = False
         self.__a2c_opt = a2c_opt
         self.__proc_bytes = 0
-        self.__failed = 0
+        self.__failed = []
         self.task = None
         self.name = foldername
         self.total_size = total_size
@@ -31,16 +49,15 @@ class DirectListener:
         for content in contents:
             if self.__is_cancelled:
                 break
-            if content['path']:
-                self.__a2c_opt['dir'] = f"{self.__path}/{content['path']}"
-            else:
-                self.__a2c_opt['dir'] = self.__path
             filename = content['filename']
-            self.__a2c_opt['out'] = filename
             try:
+                target = safe_download_path(self.__path, content['path'], filename)
+                safe_download_path(self.__path, content['path'], filename + '.aria2')
+                self.__a2c_opt['dir'] = str(target.parent)
+                self.__a2c_opt['out'] = filename
                 self.task = aria2.add_uris([content['url']], self.__a2c_opt, position=0)
             except Exception as e:
-                self.__failed += 1
+                self.__failed.append(str(filename))
                 LOGGER.error(f'Unable to download {filename} due to: {e}')
                 continue
             self.task = self.task.live
@@ -51,7 +68,7 @@ class DirectListener:
                     break
                 self.task = self.task.live
                 if error_message:= self.task.error_message:
-                    self.__failed += 1
+                    self.__failed.append(filename)
                     LOGGER.error(f'Unable to download {self.task.name} due to: {error_message}')
                     self.task.remove(True, True)
                     break
@@ -63,8 +80,11 @@ class DirectListener:
             self.task = None
         if self.__is_cancelled:
             return
-        if self.__failed == len(contents):
-            async_to_sync(self.__listener.onDownloadError, 'All files are failed to download!')
+        if self.__failed:
+            async_to_sync(
+                self.__listener.onDownloadError,
+                f"Failed to download {len(self.__failed)} file(s): " + ", ".join(self.__failed),
+            )
             return
         async_to_sync(self.__listener.onDownloadComplete)
 

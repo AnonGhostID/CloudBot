@@ -20,7 +20,6 @@ gunicorn
 httpx
 langcodes[data]
 lxml
-motor==3.7.1
 mutagen
 markdown
 natsort

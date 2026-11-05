@@ -4,11 +4,11 @@ from time import time
 from asyncio import Lock
 from pyrogram import Client
 
-from bot import LOGGER, download_dict, download_dict_lock, non_queued_dl, queue_dict_lock, bot, user, IS_PREMIUM_USER
+from bot import LOGGER, download_dict, download_dict_lock, bot, user, IS_PREMIUM_USER
 from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage, delete_links
-from bot.helper.ext_utils.task_manager import is_queued, limit_checker, stop_duplicate_check
+from bot.helper.ext_utils.task_manager import is_queued, limit_checker, queue_guard, stop_duplicate_check, wait_for_queue
 from bot.helper.telegram_helper.download_paths import download_path, media_filename, safe_filename
 
 global_lock = Lock()
@@ -37,21 +37,22 @@ class TelegramDownloadHelper:
         return self.__processed_bytes
 
     async def __onDownloadStart(self, name, size, file_id, from_queue):
-        async with global_lock:
-            GLOBAL_GID.add(file_id)
         self.name = name
         self.__id = file_id
         async with download_dict_lock:
+            if from_queue and self.__listener.uid not in download_dict:
+                return False
             download_dict[self.__listener.uid] = TelegramStatus(
                 self, size, self.__listener.message, file_id[:12], 'dl', self.__listener.upload_details)
-        async with queue_dict_lock:
-            non_queued_dl.add(self.__listener.uid)
+        async with global_lock:
+            GLOBAL_GID.add(file_id)
         if not from_queue:
             await self.__listener.onDownloadStart()
             await sendStatusMessage(self.__listener.message)
             LOGGER.info(f'Download from Telegram: {name}')
         else:
             LOGGER.info(f'Start Queued Download from Telegram: {name}')
+        return True
 
     async def __onDownloadProgress(self, current, total):
         if self.__is_cancelled:
@@ -96,6 +97,7 @@ class TelegramDownloadHelper:
         elif not self.__is_cancelled:
             await self.__onDownloadError('Internal Error occurred')
 
+    @queue_guard(lambda self, message, path, filename, session, decrypter: self.__listener.uid)
     async def add_download(self, message, path, filename, session, decrypter):
         if session == 'user':
             self.__client = user
@@ -138,14 +140,16 @@ class TelegramDownloadHelper:
                         download_dict[self.__listener.uid] = QueueStatus(name, size, gid, self.__listener, 'dl')
                     await self.__listener.onDownloadStart()
                     await sendStatusMessage(self.__listener.message)
-                    await event.wait()
+                    if not await wait_for_queue(self.__listener.uid, event):
+                        return
                     async with download_dict_lock:
                         if self.__listener.uid not in download_dict:
                             return
                     from_queue = True
                 else:
                     from_queue = False
-                await self.__onDownloadStart(name, size, gid, from_queue)
+                if not await self.__onDownloadStart(name, size, gid, from_queue):
+                    return
                 await self.__download(message, path)
             else:
                 await self.__onDownloadError('File already being downloaded!')

@@ -30,6 +30,10 @@ services:
   #   restart: on-failure
   app:
     build: .
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ./config.env:/usr/src/app/config.env
     # network_mode: "service:gluetun" # komen aja kalo ma matiin vpn nya

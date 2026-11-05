@@ -508,7 +508,7 @@ default_desp = {'AS_DOCUMENT': 'Default type of Telegram file upload. Default is
                 'LEECH_SPLIT_SIZE': 'Size of split in bytes. Default is 2GB. Default is 4GB if your account is premium.',
                 'MEDIA_GROUP': 'View Uploaded splitted file parts in media group. Default is False.',
                 'OWNER_ID': 'The Telegram User ID (not username) of the Owner of the bot.',
-                'QUEUE_ALL': 'Number of parallel tasks of downloads and uploads. For example if 20 task added and QUEUE_ALL is 8, then the summation of uploading and downloading tasks are 8 and the rest in queue. Int. NOTE: if you want to fill QUEUE_DOWNLOAD or QUEUE_UPLOAD, then QUEUE_ALL value must be greater than or equal to the greatest one and less than or equal to summation of QUEUE_UPLOAD and QUEUE_DOWNLOAD',
+                'QUEUE_ALL': 'Maximum number of parallel downloads and uploads combined. Enforced independently of QUEUE_DOWNLOAD and QUEUE_UPLOAD. Int.',
                 'QUEUE_DOWNLOAD': 'Number of all parallel downloading tasks. Int',
                 'QUEUE_UPLOAD': 'Number of all parallel uploading tasks. Int',
                 'RCLONE_FLAGS': 'key:value|key|key|key:value . Check here all RcloneFlags.',

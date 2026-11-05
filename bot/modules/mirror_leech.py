@@ -23,6 +23,7 @@ from bot.helper.mirror_utils.download_utils.rclone_download import add_rclone_do
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
+from bot.helper.mirror_utils.download_utils.resolver_task import resolve_magnet
 from bot.helper.mirror_utils.download_utils.telegram_download import TelegramDownloadHelper
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -256,7 +257,10 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             try:
                 if not is_magnet(link) and (ussr or pssw):
                     link = (link, (ussr, pssw))
-                link = await sync_to_async(direct_link_generator, link)
+                if is_magnet(link):
+                    link = await resolve_magnet(message, link)
+                else:
+                    link = await sync_to_async(direct_link_generator, link)
                 if urlparse(org_link).hostname in ('transfer.it', 'www.transfer.it'):
                     ussr = pssw = None
                 if isinstance(link, tuple):

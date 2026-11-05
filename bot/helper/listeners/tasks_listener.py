@@ -528,16 +528,21 @@ class MirrorLeechListener:
                 elif not rclonePath and not is_host_upload:
                     INDEX_URL = self.index_link if self.drive_id else config_dict['INDEX_URL']
                     if INDEX_URL:
-                        url_path = rutils.quote(f'{name}')
-                        share_url = f'{INDEX_URL}/{url_path}'
-                        if mime_type == "Folder":
-                            share_url += '/'
-                            buttons.ubutton(BotTheme('INDEX_LINK_F'), share_url)
+                        try:
+                            file_id = GoogleDriveHelper.getIdFromUrl(link) if link else ''
+                        except Exception:
+                            file_id = ''
+                        if file_id:
+                            share_url = f'{INDEX_URL}findpath?id={file_id}'
                         else:
-                            buttons.ubutton(BotTheme('INDEX_LINK_D'), share_url)
-                            if mime_type.startswith(('image', 'video', 'audio')):
-                                share_urls = f'{INDEX_URL}/{url_path}?a=view'
-                                buttons.ubutton(BotTheme('VIEW_LINK'), share_urls)
+                            url_path = rutils.quote(f'{name}')
+                            share_url = f'{INDEX_URL}/{url_path}'
+                            if mime_type == "Folder":
+                                share_url += '/'
+                        buttons.ubutton(BotTheme('INDEX_LINK_F' if mime_type == "Folder" else 'INDEX_LINK_D'), share_url)
+                        if mime_type.startswith(('image', 'video', 'audio')):
+                            share_urls = f'{INDEX_URL}findpath?id={file_id}&view=true' if file_id else f'{INDEX_URL}/{url_path}?a=view'
+                            buttons.ubutton(BotTheme('VIEW_LINK'), share_urls)
                 
             else:
                 msg += BotTheme('RCPATH', RCpath=rclonePath)

@@ -5,7 +5,7 @@ from pickle import load as pload
 from os import makedirs, path as ospath, listdir, remove as osremove
 from io import FileIO
 from re import search as re_search
-from urllib.parse import parse_qs, urlparse, quote as rquote
+from urllib.parse import parse_qs, urlparse
 from random import randrange
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -507,24 +507,6 @@ class GoogleDriveHelper:
             estr = estr.replace(char, f'\\{char}')
         return estr.strip()
 
-    def __get_recursive_list(self, file, rootid):
-        rtnlist = []
-        # if not rootid:
-        #    rootid = file.get('teamDriveId')
-        if rootid == "root":
-            rootid = self.__service.files().get(
-                fileId='root', fields='id').execute().get('id')
-        x = file.get("name")
-        y = file.get("id")
-        while (y != rootid):
-            rtnlist.append(x)
-            file = self.__service.files().get(fileId=file.get("parents")[0], supportsAllDrives=True,
-                                              fields='id, name, parents').execute()
-            x = file.get("name")
-            y = file.get("id")
-        rtnlist.reverse()
-        return rtnlist
-
     def __drive_query(self, dir_id, fileName, stopDup, isRecursive, itemType):
         try:
             if isRecursive:
@@ -619,12 +601,7 @@ class GoogleDriveHelper:
                     if index_url:
                         if drive_link:
                             msg += "<b> |</b>"
-                        if isRecur:
-                            url_path = "/".join([rquote(n, safe='')
-                                                for n in self.__get_recursive_list(file, dir_id)])
-                        else:
-                            url_path = rquote(f'{file.get("name")}', safe='')
-                        url = f'{index_url}/{url_path}/'
+                        url = f'{index_url}findpath?id={file.get("id")}'
                         msg += f' <b>⚡️ <a href="{url}">Index Link</a></b>'
                 elif mime_type == 'application/vnd.google-apps.shortcut':
                     furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
@@ -640,14 +617,10 @@ class GoogleDriveHelper:
                     if index_url:
                         if drive_link:
                             msg += "<b> |</b>"
-                        if isRecur:
-                            url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, dir_id))
-                        else:
-                            url_path = rquote(f'{file.get("name")}')
-                        url = f'{index_url}/{url_path}'
+                        url = f'{index_url}findpath?id={file.get("id")}'
                         msg += f' <b>⚡️ <a href="{url}">Index Link</a></b>'
                         if mime_type.startswith(('image', 'video', 'audio')):
-                            urlv = f'{index_url}/{url_path}?a=view'
+                            urlv = f'{index_url}findpath?id={file.get("id")}&view=true'
                             msg += f' <b>| 🔍 <a href="{urlv}">View Link</a></b>'
                 msg += '</li><br><br>'
                 contents_no += 1

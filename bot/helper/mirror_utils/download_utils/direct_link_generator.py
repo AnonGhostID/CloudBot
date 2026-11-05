@@ -15,6 +15,7 @@ from requests import Session as RequestsSession, post as requests_post, get as r
 from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin
 from cloudscraper import create_scraper as cloudscraper_create_scraper
 from cloudscraper.exceptions import CloudflareException
+from curl_cffi.requests import Session as CurlSession
 from http.cookiejar import MozillaCookieJar
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -594,7 +595,7 @@ def buzzheavier(url):
             url += "/download"
         url = url.strip()
         try:
-            with Session() as session:
+            with CurlSession(impersonate="chrome", timeout=HTTP_TIMEOUT) as session:
                 session.headers.update(
                     {
                         "referer": url.split("/download")[0],
@@ -609,15 +610,18 @@ def buzzheavier(url):
                 if not folder:
                     raise DirectDownloadLinkException("ERROR: Failed to fetch direct link")
                 return
-            return urljoin(url, d_url)
+            return d_url
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
 
-    with Session() as session:
+    with CurlSession(impersonate="chrome", timeout=HTTP_TIMEOUT) as session:
         tree = HTML(session.get(url).text)
-        if link := tree.xpath(
-            "//a[contains(@class, 'link-button') and contains(@class, 'gay-button')]/@hx-get"
-        ):
+        link = tree.xpath("//a[contains(@class, 'download-btn') and @hx-get]/@hx-get")
+        if not link:
+            link = tree.xpath(
+                "//a[contains(@class, 'link-button') and contains(@class, 'gay-button')]/@hx-get"
+            )
+        if link:
             return _bhscraper(f"https://buzzheavier.com{link[0]}")
         elif folders := tree.xpath("//tbody[@id='tbody']/tr"):
             details = {"contents": [], "title": "", "total_size": 0}
@@ -627,18 +631,17 @@ def buzzheavier(url):
                     _id = data.xpath(".//a")[0].attrib.get("href", "").strip()
                     size = data.xpath(".//td[@class='text-center']/text()")[0].strip()
                     url = _bhscraper(f"https://buzzheavier.com{_id}", True)
-                    if not url:
-                        continue
                     item = {
                         "path": "",
                         "filename": filename,
                         "url": url,
                     }
                     details["contents"].append(item)
-                    size_match = match(r"^([\d.]+)\s*([kmgtp]?)i?b$", size.lower())
-                    if size_match:
-                        unit = size_match.group(2)
-                        details["total_size"] += float(size_match.group(1)) * 1024 ** ("bkmgtp".index(unit) if unit else 0)
+                    size = size.lower()
+                    for unit, multiplier in (("k", 1024), ("m", 1048576), ("g", 1073741824), ("t", 1099511627776), ("b", 1)):
+                        if unit in size:
+                            details["total_size"] += float(size.split(unit)[0]) * multiplier
+                            break
                 except:
                     continue
             details["title"] = tree.xpath("//span/text()")[0].strip()

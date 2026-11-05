@@ -195,6 +195,8 @@ Telegram buttons use blue for navigation and links, green for confirmations and 
 
   HXFile requires Netscape-format cookies in `hxfile.txt` in the bot's working directory. Upload it through the bot's private-file settings or mount it into the container.
 
+  BuzzHeavier file and folder links use a Chrome-like HTTP fingerprint and the site's `Hx-Redirect` download URLs. Folder entries can lack a download URL if the site does not return one.
+
   PixelDrain file links are converted to `https://cdn.pixeldrain.eu.cc/<file-id>` for downloads.
 
   MediaFire links may require Cloudflare verification that the bot cannot complete. If so, open the page in a browser and send the direct download URL to the bot; direct URLs may expire.

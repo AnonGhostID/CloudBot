@@ -31,7 +31,7 @@ pyroutils.MIN_CHANNEL_ID = -100999999999999
 botStartTime = time()
 
 basicConfig(format="[%(asctime)s] [%(levelname)s] - %(message)s", #  [%(filename)s:%(lineno)d]
-            datefmt="%d-%b-%y %I:%M:%S %p",
+            datefmt="%d-%b-%y %H:%M:%S",
             handlers=[FileHandler('log.txt'), StreamHandler()],
             level=INFO)
 

@@ -381,7 +381,11 @@ class MirrorLeechListener:
         elif self.upPath == 'gd':
             size = await get_path_size(up_path)
             LOGGER.info(f"Upload Name: {up_name}")
-            drive = GoogleDriveHelper(up_name, up_dir, self)
+            try:
+                drive = GoogleDriveHelper(up_name, up_dir, self)
+            except Exception as err:
+                await self.onUploadError(str(err))
+                return
             upload_status = GdriveStatus(drive, size, self.message, gid, 'up', self.upload_details)
             async with download_dict_lock:
                 if self.uid not in download_dict:

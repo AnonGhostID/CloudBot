@@ -83,6 +83,7 @@ class GoogleDriveHelper:
                 credentials = pload(f)
         else:
             LOGGER.error('token.pickle not found!')
+            raise RuntimeError('token.pickle not found!')
         return build('drive', 'v3', credentials=credentials, cache_discovery=False)
 
     def __alt_authorize(self):

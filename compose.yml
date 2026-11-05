@@ -37,6 +37,7 @@ services:
       - no-new-privileges:true
     volumes:
       - ./config.env:/usr/src/app/config.env
+      - ./token.pickle:/usr/src/app/token.pickle
     # network_mode: "service:gluetun" # komen aja kalo ma matiin vpn nya
     command: bash start.sh
     restart: on-failure

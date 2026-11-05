@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 from asyncio import sleep
+from re import search as re_search
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, regex
 
-from bot import download_dict, bot, bot_name, download_dict_lock, OWNER_ID, user_data
+from bot import bulk_groups, download_dict, bot, bot_name, download_dict_lock, OWNER_ID, user_data
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import sendMessage, deleteMessage, auto_delete_message
 from bot.helper.ext_utils.bot_utils import getDownloadByGid, getAllDownload, MirrorStatus, new_task
 from bot.helper.telegram_helper import button_build
+from bot.helper.themes import BotTheme
 
 
 async def cancel_mirror(_, message):
@@ -40,6 +42,40 @@ async def cancel_mirror(_, message):
         return
     obj = dl.download()
     await obj.cancel_download()
+
+
+async def cancel_bulk(_, message):
+    user_id = message.from_user.id
+    match = re_search(r'cancelbulk_(\d+)', message.text or '')
+    if match is None:
+        return
+    group_id = int(match.group(1))
+    group = bulk_groups.get(group_id)
+    if group is None:
+        await sendMessage(message, "Bulk task not found.")
+        return
+    async with download_dict_lock:
+        dls = [download_dict[u] for u in list(group.get('tasks', set())) if u in download_dict]
+    if not dls:
+        await sendMessage(message, "No active parts in this bulk task.")
+        return
+    if OWNER_ID != user_id and all(dl.message.from_user.id != user_id for dl in dls) and \
+       (user_id not in user_data or not user_data[user_id].get('is_sudo')):
+        await sendMessage(message, "This task is not for you!")
+        return
+    group['cancelled'] = True
+    stopped = 0
+    for dl in dls:
+        try:
+            await dl.download().cancel_download()
+            stopped += 1
+        except Exception:
+            pass
+        await sleep(1)
+    if group.get('progress_msg') is not None:
+        await deleteMessage(group['progress_msg'])
+    bulk_groups.pop(group_id, None)
+    await sendMessage(message, BotTheme('BULK_CANCELLED', Stopped=stopped))
 
 
 async def cancel_all(status):
@@ -92,7 +128,9 @@ async def cancel_all_update(_, query):
 
 
 bot.add_handler(MessageHandler(cancel_mirror, filters=regex(
-    rf"^/{BotCommands.CancelMirror}(_\w+)?(?!all)") & CustomFilters.authorized & ~CustomFilters.blacklisted))
+    rf"^/{BotCommands.CancelMirror}(?!bulk)(_\w+)?(?!all)") & CustomFilters.authorized & ~CustomFilters.blacklisted))
+bot.add_handler(MessageHandler(cancel_bulk, filters=regex(
+    r"^/cancelbulk\S*_\d+") & CustomFilters.authorized & ~CustomFilters.blacklisted))
 bot.add_handler(MessageHandler(cancell_all_buttons, filters=command(
     BotCommands.CancelAllCommand) & CustomFilters.sudo))
 bot.add_handler(CallbackQueryHandler(cancel_all_update, filters=regex(r"^canall")))

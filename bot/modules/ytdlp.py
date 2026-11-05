@@ -9,7 +9,7 @@ from functools import partial
 from html import escape
 from time import time
 
-from bot import DOWNLOAD_DIR, bot, categories_dict, config_dict, user_data, LOGGER
+from bot import DOWNLOAD_DIR, bot, bulk_groups, categories_dict, config_dict, user_data, LOGGER
 from bot.helper.ext_utils.task_manager import task_utils
 from bot.helper.ext_utils.upload_hosts import resolve_upload_host, upload_host_credential_error
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, auto_delete_message, delete_links, open_category_btns, open_dump_btns
@@ -313,7 +313,9 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
     if folder_name and not isBulk:
         folder_name = f'/{folder_name}'
         if sameDir is None:
-            sameDir = {'total': multi, 'tasks': set(), 'name': folder_name}
+            sameDir = {'total': multi, 'tasks': set(), 'name': folder_name, 'initial_total': multi,
+                       'progress_msg': None, 'cancelled': False, 'group_id': message.id}
+            bulk_groups[message.id] = sameDir
         sameDir['tasks'].add(message.id)
 
     if isBulk:

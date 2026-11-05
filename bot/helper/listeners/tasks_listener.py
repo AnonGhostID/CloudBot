@@ -13,7 +13,7 @@ from aioshutil import move
 from asyncio import create_subprocess_exec, sleep
 from pyrogram.enums import ChatType
 
-from bot import OWNER_ID, Interval, aria2, DOWNLOAD_DIR, download_dict, download_dict_lock, LOGGER, bot_name, DATABASE_URL, \
+from bot import OWNER_ID, Interval, aria2, bulk_groups, DOWNLOAD_DIR, download_dict, download_dict_lock, LOGGER, bot_name, DATABASE_URL, \
     MAX_SPLIT_SIZE, config_dict, status_reply_dict_lock, user_data, bot, GLOBAL_EXTENSION_FILTER
 from bot.helper.ext_utils.bot_utils import extra_btns, sync_to_async, get_readable_file_size, get_readable_time, is_gdrive_link
 from bot.helper.ext_utils.upload_hosts import resolve_upload_host
@@ -177,7 +177,10 @@ class MirrorLeechListener:
             gid = download.gid()
         LOGGER.info(f"Download Completed: {name}")
         if multi_links:
-            await self.onUploadError('Downloaded! Starting other part of the Task...')
+            if self.sameDir.get('cancelled'):
+                await clean_download(self.dir)
+                return
+            await self.onPartDownloaded(name)
             return
         if name == "None" or self.isQbit or not await aiopath.exists(f"{self.dir}/{name}"):
             try:
@@ -207,6 +210,9 @@ class MirrorLeechListener:
                 async with download_dict_lock:
                     download_dict[self.uid] = ExtractStatus(
                         name, size, gid, self)
+                if self.sameDir and self.sameDir.get('progress_msg') is not None:
+                    await editMessage(self.sameDir['progress_msg'],
+                                      BotTheme('PART_EXTRACTING', Total=self.sameDir.get('initial_total', 0)))
                 if await aiopath.isdir(dl_path):
                     if self.seed:
                         self.newDir = f"{self.dir}10000"
@@ -604,8 +610,11 @@ class MirrorLeechListener:
         
         if self.botpmmsg and (not config_dict['DELETE_LINKS'] or config_dict['CLEAN_LOG_MSG']):
             await deleteMessage(self.botpmmsg)
-        
+
         await clean_download(self.dir)
+        self._pop_bulk_group()
+        if self.sameDir and self.sameDir.get('progress_msg') is not None:
+            await deleteMessage(self.sameDir['progress_msg'])
         async with download_dict_lock:
             if self.uid in download_dict.keys():
                 del download_dict[self.uid]
@@ -619,6 +628,30 @@ class MirrorLeechListener:
         await delete_links(self.message)
 
 
+    def _pop_bulk_group(self):
+        if self.sameDir and (group_id := self.sameDir.get('group_id')) is not None:
+            bulk_groups.pop(group_id, None)
+
+    async def onPartDownloaded(self, name):
+        async with download_dict_lock:
+            if self.uid in download_dict.keys():
+                del download_dict[self.uid]
+        await release_queue(self.uid)
+        total = self.sameDir.get('total', 0) if self.sameDir else 0
+        initial = self.sameDir.get('initial_total', total) if self.sameDir else total
+        done = initial - total
+        msg = BotTheme('PART_DOWNLOADED', Name=escape(name), Total=total, Done=done, Initial=initial)
+        if self.sameDir and self.sameDir.get('progress_msg') is not None:
+            await editMessage(self.sameDir['progress_msg'], msg)
+        else:
+            progress_msg = await sendMessage(self.message, msg)
+            if self.sameDir is not None and progress_msg is not None:
+                self.sameDir['progress_msg'] = progress_msg
+        await update_all_messages()
+        await clean_download(self.dir)
+        if self.newDir:
+            await clean_download(self.newDir)
+
     async def onDownloadError(self, error, button=None):
         async with download_dict_lock:
             if self.uid in download_dict.keys():
@@ -627,6 +660,8 @@ class MirrorLeechListener:
             if self.sameDir and self.uid in self.sameDir['tasks']:
                 self.sameDir['tasks'].remove(self.uid)
                 self.sameDir['total'] -= 1
+            if self.sameDir and self.sameDir.get('total', 1) == 0:
+                self._pop_bulk_group()
         await release_queue(self.uid)
         msg = f'''<i><b>Download Stopped!</b></i>
 ┠ <b>Task for:</b> {self.tag}
@@ -634,7 +669,8 @@ class MirrorLeechListener:
 ┠ <b>Due To:</b> {escape(error)}
 ┠ <b>Mode:</b> {self.upload_details['mode']}
 ┖ <b>Elapsed:</b> {get_readable_time(time() - self.message.date.timestamp())}'''
-        await sendMessage(self.message, msg, button)
+        if not (self.sameDir and self.sameDir.get('cancelled')):
+            await sendMessage(self.message, msg, button)
         if count == 0:
             await self.clean()
         else:
@@ -654,13 +690,16 @@ class MirrorLeechListener:
                 del download_dict[self.uid]
             count = len(download_dict)
         await release_queue(self.uid)
+        if self.sameDir and self.sameDir.get('total', 1) <= 1:
+            self._pop_bulk_group()
         msg = f'''<i><b>Upload Stopped!</b></i>
 ┠ <b>Task for:</b> {self.tag}
 ┃
 ┠ <b>Due To:</b> {escape(error)}
 ┠ <b>Mode:</b> {self.upload_details['mode']}
 ┖ <b>Elapsed:</b> {get_readable_time(time() - self.message.date.timestamp())}'''
-        await sendMessage(self.message, msg)
+        if not (self.sameDir and self.sameDir.get('cancelled')):
+            await sendMessage(self.message, msg)
         if count == 0:
             await self.clean()
         else:

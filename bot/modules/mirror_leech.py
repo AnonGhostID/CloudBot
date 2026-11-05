@@ -10,7 +10,7 @@ from aiofiles import open as aiopen
 from aiofiles.os import path as aiopath
 from cloudscraper import create_scraper
 
-from bot import bot, DOWNLOAD_DIR, LOGGER, config_dict, bot_name, categories_dict, user_data
+from bot import bot, DOWNLOAD_DIR, LOGGER, config_dict, bot_name, bulk_groups, categories_dict, user_data
 from bot.helper.mirror_utils.download_utils.direct_downloader import add_direct_download
 from bot.helper.ext_utils.bot_utils import is_url, is_magnet, is_gdrive_link, get_content_type, new_task, sync_to_async, is_rclone_path, is_telegram_link, arg_parser, fetch_user_tds, fetch_user_dumps, get_stats
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
@@ -123,6 +123,25 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
     if drive_id and is_gdrive_link(drive_id):
         drive_id = GoogleDriveHelper.getIdFromUrl(drive_id)
 
+    fwd_tokens = []
+    skip_next = False
+    seen_flag = False
+    for t in input_list[1:]:
+        if not seen_flag and not t.startswith('-'):
+            continue
+        seen_flag = True
+        if skip_next and not t.startswith('-'):
+            skip_next = False
+            continue
+        skip_next = False
+        if t in ('-b', '-bulk', '-i'):
+            skip_next = True
+            continue
+        if t.startswith(('-b:', '-bulk:', '-i:')):
+            continue
+        fwd_tokens.append(t)
+    fwd_args = " ".join(fwd_tokens)
+
     if folder_name and not isBulk:
         folder_name = safe_filename(folder_name)
         seed = False
@@ -130,7 +149,9 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         seed_time = None
         folder_name = f'/{folder_name}'
         if sameDir is None:
-            sameDir = {'total': multi, 'tasks': set(), 'name': folder_name}
+            sameDir = {'total': multi, 'tasks': set(), 'name': folder_name, 'initial_total': multi,
+                       'progress_msg': None, 'cancelled': False, 'group_id': message.id}
+            bulk_groups[message.id] = sameDir
         sameDir['tasks'].add(message.id)
 
     if isBulk:
@@ -142,7 +163,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             await sendMessage(message, 'Reply to text file or tg message that have links seperated by new line!')
             return
         b_msg = input_list[:1]
-        b_msg.append(f'{bulk[0]} -i {len(bulk)}')
+        b_msg.append(f'{bulk[0]} -i {len(bulk)}' + (f' {fwd_args}' if fwd_args else ''))
         nextmsg = await sendMessage(message, " ".join(b_msg))
         nextmsg = await client.get_messages(chat_id=message.chat.id, message_ids=nextmsg.id)
         nextmsg.from_user = message.from_user
@@ -157,9 +178,11 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         if multi <= 1:
             return
         await sleep(5)
+        if sameDir and sameDir.get('cancelled'):
+            return
         if len(bulk) != 0:
             msg = input_list[:1]
-            msg.append(f'{bulk[0]} -i {multi - 1}')
+            msg.append(f'{bulk[0]} -i {multi - 1}' + (f' {fwd_args}' if fwd_args else ''))
             nextmsg = await sendMessage(message, " ".join(msg))
         else:
             msg = [s.strip() for s in input_list]
@@ -172,6 +195,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             sameDir['tasks'].add(nextmsg.id)
         nextmsg.from_user = message.from_user
         await sleep(5)
+        if sameDir and sameDir.get('cancelled'):
+            return
         _mirror_leech(client, nextmsg, isQbit, isLeech, sameDir, bulk)
 
     __run_multi()

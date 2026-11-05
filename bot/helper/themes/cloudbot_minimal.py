@@ -199,6 +199,10 @@ class CloudBotStyle:
     ID =                                                        '<b>ID:</b> <code>{Id}</code>'
     BTSEL =          '\n┠ <b>Select:</b> {Btsel}'
     CANCEL =         '\n┖ {Cancel}\n\n'
+    CANCEL_BULK =    '\n┠ <b>Cancel Bulk:</b> {CancelBulk}'
+    PART_DOWNLOADED = '📦 <code>{Name}</code> downloaded\nWaiting for remaining {Total} part(s) — {Done}/{Initial} done…'
+    PART_EXTRACTING = '✅ All {Total} parts downloaded — extracting…'
+    BULK_CANCELLED = 'Bulk task cancelled! {Stopped} part(s) stopped.'
 
     ####------FOOTER--------
     FOOTER = '⌬ <b><i>Bot Stats</i></b>\n'

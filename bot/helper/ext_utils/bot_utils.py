@@ -27,7 +27,7 @@ from pyrogram.errors import PeerIdInvalid
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.themes import BotTheme
 from bot.version import get_version
-from bot import OWNER_ID, bot_name, bot_cache, DATABASE_URL, LOGGER, get_client, aria2, download_dict, download_dict_lock, botStartTime, user_data, config_dict, bot_loop, extra_buttons, user
+from bot import OWNER_ID, bot_name, bot_cache, bulk_groups, DATABASE_URL, LOGGER, get_client, aria2, download_dict, download_dict_lock, botStartTime, user_data, config_dict, bot_loop, extra_buttons, user
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -241,6 +241,10 @@ def get_readable_message():
         msg += BotTheme('ID', Id=download.message.from_user.id)
         if (download.eng()).startswith("qBit"):
             msg += BotTheme('BTSEL', Btsel=f"/{BotCommands.BtSelectCommand}_{download.gid()}")
+        task_uid = download.message.id
+        grp_id = next((g for g, sd in bulk_groups.items() if task_uid in sd.get('tasks', set())), None)
+        if grp_id is not None:
+            msg += BotTheme('CANCEL_BULK', CancelBulk=f"/cancelbulk_{grp_id}")
         msg += BotTheme('CANCEL', Cancel=f"/{BotCommands.CancelMirror}_{download.gid()}")
 
     if len(msg) == 0:

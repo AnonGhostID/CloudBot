@@ -29,6 +29,7 @@ services:
   #    - "8080:8080"
   #   restart: on-failure
   app:
+    container_name: cloudbot-app
     build: .
     cap_drop:
       - ALL

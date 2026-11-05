@@ -1,10 +1,9 @@
 aiohttp[speedups]
 aiofiles
 aioshutil
-anytree==2.8.0
+anytree==2.13.0
 apscheduler
 aria2p
-asyncio
 beautifulsoup4
 cinemagoer
 cloudscraper
@@ -21,12 +20,10 @@ gunicorn
 httpx
 langcodes[data]
 lxml
-mutagen
 markdown
 natsort
 pillow
 psutil
-pybase64
 pycountry
 pymongo==4.19.0
 kurigram==2.2.26
@@ -38,8 +35,9 @@ speedtest-cli
 telegraph
 tenacity
 tgcrypto==1.2.5
+tzlocal
+urllib3
 uv
 uvloop
-xattr
 yt-dlp[default,curl-cffi]
 pytz

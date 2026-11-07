@@ -81,7 +81,8 @@ Make Sure Bot is already Admin else it will not accept.
 <code>/cmd</code> link -up <code>pd</code> (PixelDrain)
 <code>/cmd</code> link -up <code>stp</code> (StreamTape)
 <code>/cmd</code> link -up <code>ab</code> (AkiraBox, anonymous, 5 GB per file)
-Host codes are case-insensitive and select only that host, even if it is disabled in settings. AkiraBox needs no credentials. Other explicit host selections require user or shared config credentials; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+<code>/cmd</code> link -up <code>vf</code> (VikingFile, anonymous optional, set User Hash to attach to your account)
+Host codes are case-insensitive and select only that host, even if it is disabled in settings. AkiraBox and VikingFile need no credentials. Other explicit host selections require user or shared config credentials; StreamTape requires login:key. Automatic multi-host BuzzHeavier uploads can use anonymous access.
 With no -up, DEFAULT_UPLOAD=hosts uploads to enabled hosts; a host code selects that host only.
 You can directly add the upload path: -up remote:dir/subdir
 

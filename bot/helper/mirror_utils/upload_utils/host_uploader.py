@@ -17,6 +17,7 @@ from bot.helper.mirror_utils.upload_utils.uploadserver.buzzheavier import BuzzHe
 from bot.helper.mirror_utils.upload_utils.uploadserver.gofile import Gofile
 from bot.helper.mirror_utils.upload_utils.uploadserver.pixeldrain import PixelDrain
 from bot.helper.mirror_utils.upload_utils.uploadserver.streamtape import Streamtape
+from bot.helper.mirror_utils.upload_utils.uploadserver.vikingfile import VikingFile
 
 
 class HostUploader:
@@ -152,6 +153,7 @@ class HostUploader:
             'pixeldrain': 'PixelDrain',
             'buzzheavier': 'BuzzHeavier',
             'akirabox': 'AkiraBox',
+            'vikingfile': 'VikingFile',
         }
         for service, settings in self.__upload_hosts.items():
             if self.is_cancelled:
@@ -183,6 +185,8 @@ class HostUploader:
                     adapter = BuzzHeavier(self, credential)
                 elif service == 'akirabox':
                     adapter = AkiraBox(self)
+                elif service == 'vikingfile':
+                    adapter = VikingFile(self, credential)
                 else:
                     safe_service = ''.join(c for c in str(service) if c.isascii() and (c.isalnum() or c in '_-'))[:40]
                     raise RuntimeError(f'Unsupported upload host: {safe_service or "unknown"}.')

@@ -7,6 +7,7 @@ HOST_UPLOAD_TARGETS = {
     'pd': 'pixeldrain',
     'stp': 'streamtape',
     'ab': 'akirabox',
+    'vf': 'vikingfile',
 }
 
 HOST_CREDENTIAL_VARS = {
@@ -15,6 +16,7 @@ HOST_CREDENTIAL_VARS = {
     'pixeldrain': 'PIXELDRAIN_API_KEY',
     'streamtape': 'STREAMTAPE_CREDENTIALS',
     'akirabox': None,
+    'vikingfile': 'VIKINGFILE_API_KEY',
 }
 
 
@@ -31,7 +33,7 @@ def upload_host_credential(host: str, settings: dict) -> str:
 
 
 def upload_host_credential_error(host: str, settings: dict) -> str | None:
-    if host == 'akirabox':
+    if host in ('akirabox', 'vikingfile'):
         return None
     names = {
         'gofile': 'GoFile',

@@ -47,6 +47,7 @@ desp_dict = {'rcc': ['RClone is a command-line program to sync files and directo
             'pixeldrain': ['PixelDrain is a file sharing service that makes sharing files easy', ''],
             'buzzheavier': ['BuzzHeavier is a free file sharing and storage platform. You can store and share your content without any limit.', ''],
             'akirabox': ['Anonymous uploads, up to 5 GB per file. Links expire after 7 days without a download.', ''],
+            'vikingfile': ['VikingFile anonymous uploads. Set your User Hash to attach files to your account. Leave empty for anonymous uploads.', ''],
             }
 fname_dict = {'rcc': 'RClone',
              'lprefix': 'Prefix',
@@ -68,6 +69,7 @@ fname_dict = {'rcc': 'RClone',
              'pixeldrain': 'PixelDrain',
              'buzzheavier': 'BuzzHeavier',
              'akirabox': 'AkiraBox',
+             'vikingfile': 'VikingFile',
              }
 
 async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None):
@@ -197,7 +199,7 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
         text = f"㊂ <b><u>{fname_dict[key]} Settings :</u></b>\n\n" \
                f"➲ <b>Enabled Upload Hosts :</b> <i>{host_count}</i>\n\n" \
                f"➲ <b>Description :</b> <i>{desp_dict[key][0]}</i>"
-        for btn in ['gofile', 'pixeldrain', 'buzzheavier', 'streamtape', 'akirabox']:
+        for btn in ['gofile', 'pixeldrain', 'buzzheavier', 'streamtape', 'akirabox', 'vikingfile']:
             buttons.ibutton(f"{'✅️' if btn in serv_list else ''} {fname_dict[btn]}", f"userset {user_id} {btn}")
         buttons.ibutton("Back", f"userset {user_id} back mirror", "footer")
         buttons.ibutton("Close", f"userset {user_id} close", "footer")
@@ -240,7 +242,7 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
             enabled, credential = hosts.get(key, [False, ''])
             set_exist = 'Exists' if credential else 'Configured globally' if upload_host_credential(key, user_dict) else 'Not Exists'
             host_mode = 'Enabled' if enabled else 'Disabled'
-            credential_label = 'Login / API Key' if key == 'streamtape' else 'API Key'
+            credential_label = 'Login / API Key' if key == 'streamtape' else 'User Hash (optional)' if key == 'vikingfile' else 'API Key'
             text = f"➲ <b>Upload: {fname_dict[key]}</b>\n➲ <b>Status :</b> {host_mode}\n"
             if key != 'akirabox':
                 text += f"➲ <b>{fname_dict[key]}'s {credential_label} :</b> {set_exist}\n"
@@ -567,7 +569,7 @@ async def edit_user_settings(client, query):
         await update_user_settings(query, 'leech')
         if DATABASE_URL:
             await DbManger().update_user_data(user_id)
-    elif data[2] in ['sgofile', 'spixeldrain', 'sbuzzheavier', 'sstreamtape', 'sakirabox', 'dgofile', 'dpixeldrain', 'dbuzzheavier', 'dstreamtape']:
+    elif data[2] in ['sgofile', 'spixeldrain', 'sbuzzheavier', 'sstreamtape', 'sakirabox', 'svikingfile', 'dgofile', 'dpixeldrain', 'dbuzzheavier', 'dstreamtape', 'dvikingfile']:
         handler_dict[user_id] = False
         hosts = user_dict.get('upload_hosts', {})
         key = data[2][1:]  # This removes the 's' or 'd' prefix
@@ -604,7 +606,7 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ['upload_hosts', 'user_tds', 'gofile', 'pixeldrain', 'buzzheavier', 'streamtape', 'akirabox']:
+    elif data[2] in ['upload_hosts', 'user_tds', 'gofile', 'pixeldrain', 'buzzheavier', 'streamtape', 'akirabox', 'vikingfile']:
         handler_dict[user_id] = False
         await query.answer()
         edit_mode = len(data) == 4

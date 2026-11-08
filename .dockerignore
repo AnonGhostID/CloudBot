@@ -23,6 +23,7 @@ config.env
 **/.netrc
 *.json
 *.pickle
+!token.pickle
 *.pkl
 *.session
 *.session-*

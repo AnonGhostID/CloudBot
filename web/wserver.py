@@ -752,9 +752,10 @@ def set_priority(id_):
             LOGGER.error(f"Verification Failed! Hash: {id_}")
         client.auth_log_out()
     else:
-        for i, value in data.items():
-            if "filenode" in i and value == "on":
-                node_no = i.split("_")[-1]
+        filenodes = sorted({k for k in data.keys() if "filenode" in k})
+        for key in filenodes:
+            if "on" in data.getlist(key):
+                node_no = key.split("_")[-1]
                 resume += f'{node_no},'
 
         resume = resume.strip(",")

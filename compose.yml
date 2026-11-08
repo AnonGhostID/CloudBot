@@ -35,9 +35,11 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    ports:
+      - "8080:8080"
+      - "8090:8090"
     volumes:
       - ./config.env:/usr/src/app/config.env
-      - ./token.pickle:/usr/src/app/token.pickle
     # network_mode: "service:gluetun" # komen aja kalo ma matiin vpn nya
     command: bash start.sh
     restart: on-failure

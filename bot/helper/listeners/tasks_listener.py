@@ -281,12 +281,12 @@ class MirrorLeechListener:
             pswd = self.compress if isinstance(self.compress, str) else ''
             if up_path:
                 dl_path = up_path
-                up_path = f"{up_path}.zip"
+                up_path = f"{up_path}.7z"
             elif self.seed and self.isLeech:
                 self.newDir = f"{self.dir}10000"
-                up_path = f"{self.newDir}/{name}.zip"
+                up_path = f"{self.newDir}/{name}.7z"
             else:
-                up_path = f"{dl_path}.zip"
+                up_path = f"{dl_path}.7z"
             async with download_dict_lock:
                 download_dict[self.uid] = ZipStatus(name, size, gid, self)
             LEECH_SPLIT_SIZE = user_dict.get('split_size', False) or config_dict['LEECH_SPLIT_SIZE']
@@ -298,12 +298,12 @@ class MirrorLeechListener:
             if self.isLeech and int(size) > LEECH_SPLIT_SIZE:
                 if not pswd:
                     del cmd[4]
-                LOGGER.info(f'Zip: orig_path: {dl_path}, zip_path: {up_path}.0*')
+                LOGGER.info(f'7z: orig_path: {dl_path}, archive_path: {up_path}.0*')
             else:
                 del cmd[1]
                 if not pswd:
                     del cmd[3]
-                LOGGER.info(f'Zip: orig_path: {dl_path}, zip_path: {up_path}')
+                LOGGER.info(f'7z: orig_path: {dl_path}, archive_path: {up_path}')
             if self.suproc == 'cancelled':
                 return
             self.suproc = await create_subprocess_exec(*cmd)

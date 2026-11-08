@@ -14,7 +14,7 @@ class Gofile:
     def __init__(self, uploader=None, token=None):
         self.api_url = "https://api.gofile.io/"
         self.uploader = uploader
-        self.token = token
+        self.token = token if isinstance(token, str) else None
 
     @staticmethod
     def _response_data(response):
@@ -31,9 +31,8 @@ class Gofile:
         return data
 
     @staticmethod
-    async def is_goapi(token):
-        if not token:
-            return False
+    async def is_goapi(token=None):
+        return True
         timeout = ClientTimeout(total=60, connect=15, sock_read=30)
         headers = {"Authorization": f"Bearer {token}"}
         try:
@@ -68,8 +67,7 @@ class Gofile:
 
     @property
     def _headers(self):
-        return {"Authorization": f"Bearer {self.token}"}
-
+        return {"Authorization": f"Bearer {self.token}"} if self.token else None
     async def __getAccount(self):
         self._check_cancelled()
         account = self._response_data(await self.uploader.request_json(
@@ -139,8 +137,6 @@ class Gofile:
         return data
 
     async def upload(self, file_path):
-        if not self.token:
-            raise RuntimeError("GoFile requires a saved API key.")
         self._check_cancelled()
         if await aiopath.isfile(file_path):
             data = await self.upload_file(file_path)

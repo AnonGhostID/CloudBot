@@ -43,7 +43,7 @@ def upload_host_credential(host: str, settings: dict) -> str:
 
 
 def upload_host_credential_error(host: str, settings: dict) -> str | None:
-    if host in ('akirabox', 'vikingfile', 'filester', 'filemirage', 'transferit', 'storageto', 'filebin'):
+    if host in ('akirabox', 'vikingfile', 'filester', 'filemirage', 'transferit', 'storageto', 'filebin', 'gofile'):
         return None
     names = {
         'gofile': 'GoFile',

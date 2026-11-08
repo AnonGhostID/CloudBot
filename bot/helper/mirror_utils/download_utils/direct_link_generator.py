@@ -1277,7 +1277,7 @@ def gofile(url, auth):
         else:
             password = auth[1] if auth else ""
         _password = sha256(password.encode("utf-8")).hexdigest() if password else ""
-        _id = url.split("/")[-1]
+        _id = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1]
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
 
@@ -1292,15 +1292,15 @@ def gofile(url, auth):
         try:
             __res = session.post(__url, headers=headers).json()
             if __res["status"] != "ok":
-                raise DirectDownloadLinkException("ERROR: Failed to get token.")
+                raise DirectDownloadLinkException(f"ERROR: Gofile account creation: {__res['status']}")
             return __res["data"]["token"]
-        except Exception as e:
-            raise e
+        except (RequestException, ValueError, KeyError, TypeError) as e:
+            raise DirectDownloadLinkException(f"ERROR: Gofile account creation failed: {e}") from e
 
     def __fetch_links(session, _id, folderPath=""):
-        _url = f"https://api.gofile.io/contents/{_id}?cache=true"
+        _url = f"https://api.gofile.io/contents/{_id}?pageSize=0"
         time_slot = int(time()) // 14400
-        raw = f"{user_agent}::en-US::{token}::{time_slot}::gf2026x"
+        raw = f"{user_agent}::en-US::{token}::{time_slot}::{website_secret}"
         wt = sha256(raw.encode()).hexdigest()
         headers = {
             "User-Agent": user_agent,
@@ -1317,25 +1317,33 @@ def gofile(url, auth):
             _json = session.get(_url, headers=headers).json()
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-        if _json["status"] in "error-passwordRequired":
+        if _json["status"] == "error-passwordRequired":
             raise DirectDownloadLinkException(
                 f"ERROR:\n{PASSWORD_ERROR_MESSAGE.format(url)}"
             )
-        if _json["status"] in "error-passwordWrong":
+        if _json["status"] == "error-passwordWrong":
             raise DirectDownloadLinkException("ERROR: This password is wrong !")
-        if _json["status"] in "error-notFound":
+        if _json["status"] == "error-notFound":
             raise DirectDownloadLinkException(
                 "ERROR: File not found on gofile's server"
             )
-        if _json["status"] in "error-notPublic":
+        if _json["status"] == "error-notPublic":
             raise DirectDownloadLinkException("ERROR: This folder is not public")
+        if _json["status"] != "ok":
+            raise DirectDownloadLinkException(f"ERROR: Gofile: {_json['status']}")
 
         data = _json["data"]
+        if data.get("canAccess") is False:
+            if data.get("password"):
+                if _password:
+                    raise DirectDownloadLinkException("ERROR: This password is wrong !")
+                raise DirectDownloadLinkException(f"ERROR:\n{PASSWORD_ERROR_MESSAGE.format(url)}")
+            raise DirectDownloadLinkException("ERROR: Gofile content is private or expired")
 
         if not details["title"]:
             details["title"] = data["name"] if data["type"] == "folder" else _id
 
-        contents = data["children"]
+        contents = data["children"] if data["type"] == "folder" else {_id: data}
         for content in contents.values():
             if content["type"] == "folder":
                 if not content["public"]:
@@ -1363,14 +1371,25 @@ def gofile(url, auth):
     details = {"contents": [], "title": "", "total_size": 0}
     with Session() as session:
         try:
+            response = session.get("https://gofile.io/js/wt.obf.js")
+            response.raise_for_status()
+            script = re.sub(r"\\x([0-9a-fA-F]{2})", lambda m: chr(int(m[1], 16)), response.text)
+            secrets = set(findall(r"""['"]([0-9a-f]{14})['"]""", script))
+            if len(secrets) != 1:
+                raise DirectDownloadLinkException("ERROR: Gofile website token format has changed")
+            website_secret = secrets.pop()
             token = __get_token(session)
-        except Exception as e:
-            raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+        except DirectDownloadLinkException:
+            raise
+        except (RequestException, ValueError, KeyError, TypeError) as e:
+            raise DirectDownloadLinkException(f"ERROR: Gofile authentication failed: {e}") from e
         details["header"] = f"Cookie: accountToken={token}"
         try:
             __fetch_links(session, _id)
         except Exception as e:
             raise DirectDownloadLinkException(e)
+    if not details["contents"]:
+        raise DirectDownloadLinkException("ERROR: Gofile folder contains no downloadable files")
 
     if len(details["contents"]) == 1:
         return (details["contents"][0]["url"], details["header"])

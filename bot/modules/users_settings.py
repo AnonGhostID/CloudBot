@@ -254,7 +254,7 @@ async def get_user_settings(from_user, key=None, edit_type=None, edit_mode=None)
             host_mode = 'Enabled' if enabled else 'Disabled'
             credential_label = 'Login / API Key' if key == 'streamtape' else 'User Hash (optional)' if key == 'vikingfile' else 'API Key'
             text = f"➲ <b>Upload: {fname_dict[key]}</b>\n➲ <b>Status :</b> {host_mode}\n"
-            if key not in ('akirabox', 'transferit', 'filebin'):
+            if key not in ('akirabox', 'transferit', 'filebin', 'gofile'):
                 text += f"➲ <b>{fname_dict[key]}'s {credential_label} :</b> {set_exist}\n"
             text += '\n'
             buttons.ibutton('Disable Upload' if host_mode == 'Enabled' else 'Enable Upload', f"userset {user_id} s{key}", "header")

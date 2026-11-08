@@ -179,8 +179,6 @@ class HostUploader:
             self.__start_time = monotonic()
             try:
                 if service == 'gofile':
-                    if not isinstance(credential, str) or not credential:
-                        raise RuntimeError('GoFile requires a saved API key.')
                     adapter = Gofile(self, credential)
                 elif service == 'streamtape':
                     login, separator, key = credential.partition(':') if isinstance(credential, str) else ('', '', '')

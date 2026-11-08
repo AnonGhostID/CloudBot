@@ -14,9 +14,14 @@ from bot.helper.ext_utils.upload_hosts import HOST_CREDENTIAL_VARS, upload_host_
 from bot.helper.mirror_utils.upload_utils.progress_file_reader import ProgressFileReader
 from bot.helper.mirror_utils.upload_utils.uploadserver.akirabox import AkiraBox
 from bot.helper.mirror_utils.upload_utils.uploadserver.buzzheavier import BuzzHeavier
+from bot.helper.mirror_utils.upload_utils.uploadserver.filester import Filester
+from bot.helper.mirror_utils.upload_utils.uploadserver.filemirage import FileMirage
+from bot.helper.mirror_utils.upload_utils.uploadserver.filebin import Filebin
 from bot.helper.mirror_utils.upload_utils.uploadserver.gofile import Gofile
 from bot.helper.mirror_utils.upload_utils.uploadserver.pixeldrain import PixelDrain
 from bot.helper.mirror_utils.upload_utils.uploadserver.streamtape import Streamtape
+from bot.helper.mirror_utils.upload_utils.uploadserver.storageto import StorageTo
+from bot.helper.mirror_utils.upload_utils.uploadserver.transferit import TransferIt
 from bot.helper.mirror_utils.upload_utils.uploadserver.vikingfile import VikingFile
 
 
@@ -154,6 +159,11 @@ class HostUploader:
             'buzzheavier': 'BuzzHeavier',
             'akirabox': 'AkiraBox',
             'vikingfile': 'VikingFile',
+            'filester': 'Filester',
+            'filemirage': 'FileMirage',
+            'transferit': 'Transfer.it',
+            'storageto': 'storage.to',
+            'filebin': 'Filebin',
         }
         for service, settings in self.__upload_hosts.items():
             if self.is_cancelled:
@@ -187,6 +197,16 @@ class HostUploader:
                     adapter = AkiraBox(self)
                 elif service == 'vikingfile':
                     adapter = VikingFile(self, credential)
+                elif service == 'filester':
+                    adapter = Filester(self, credential)
+                elif service == 'filemirage':
+                    adapter = FileMirage(self, credential)
+                elif service == 'transferit':
+                    adapter = TransferIt(self)
+                elif service == 'storageto':
+                    adapter = StorageTo(self, credential)
+                elif service == 'filebin':
+                    adapter = Filebin(self)
                 else:
                     safe_service = ''.join(c for c in str(service) if c.isascii() and (c.isalnum() or c in '_-'))[:40]
                     raise RuntimeError(f'Unsupported upload host: {safe_service or "unknown"}.')

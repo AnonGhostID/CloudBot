@@ -280,7 +280,7 @@ async def _ytdl(client, message, isLeech=False, sameDir=None, bulk=[]):
     up          = args['-up'] or args['-upload']
     if not isLeech and isinstance(up, str):
         if up.casefold() in ('ddl', 'hosts'):
-            await sendMessage(message, 'Choose one upload host: -up gf, -up bh, -up pd, -up stp, -up ab or -up vf.')
+            await sendMessage(message, 'Choose one upload host: gf, bh, pd, stp, ab, vf, fs, fm, tf, st or fb.')
             return
         if (host := resolve_upload_host(up)) is not None:
             if error := upload_host_credential_error(host, user_data.get(message.from_user.id, {})):

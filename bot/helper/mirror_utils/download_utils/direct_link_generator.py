@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import json
+import re
+from ntpath import splitdrive
 from threading import Thread
 from base64 import b64decode, urlsafe_b64decode, urlsafe_b64encode
 from json import loads
@@ -11,11 +14,11 @@ from re import findall, match, search
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from lxml.etree import HTML
-from requests import Session as RequestsSession, post as requests_post, get as requests_get, RequestException
-from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin
+from requests import Request, Session as RequestsSession, post as requests_post, get as requests_get, RequestException
+from urllib.parse import parse_qs, quote, unquote, urlparse, urljoin, urlsplit
 from cloudscraper import create_scraper as cloudscraper_create_scraper
 from cloudscraper.exceptions import CloudflareException
-from curl_cffi.requests import Session as CurlSession
+from curl_cffi.requests import RequestsError, Session as CurlSession
 from http.cookiejar import MozillaCookieJar
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -160,6 +163,10 @@ def direct_link_generator(link, cancel_event=None):
         return real_debrid(link)
     elif domain in ('transfer.it', 'www.transfer.it'):
         return transfer_it(link, auth)
+    elif domain in ('filebin.net', 'www.filebin.net'):
+        return filebin(link)
+    elif domain in ('storage.to', 'www.storage.to'):
+        return storageto(link)
     elif any(x in domain for x in ['filelions.com', 'filelions.live', 'filelions.to', 'filelions.online']):
         return filelions(link)
     elif 'mediafire.com' in domain:
@@ -249,6 +256,202 @@ def direct_link_generator(link, cancel_event=None):
     else:
         raise DirectDownloadLinkException(f'No Direct link function found for {link}')
 
+
+
+def _safe_name(name):
+    return (isinstance(name, str) and name not in ('', '.', '..')
+            and not splitdrive(name)[0] and '/' not in name and '\\' not in name
+            and not any(ord(char) < 32 or ord(char) == 127 for char in name))
+
+
+def filebin(url):
+    """Resolve a Filebin bin or file URL."""
+    try:
+        parsed = urlsplit(url)
+        if (parsed.scheme not in ('http', 'https')
+                or parsed.hostname not in ('filebin.net', 'www.filebin.net')
+                or parsed.username or parsed.password or parsed.port not in (None, 80, 443)):
+            raise DirectDownloadLinkException('ERROR: Invalid Filebin URL')
+        parts = parsed.path.strip('/').split('/')
+        if len(parts) not in (1, 2):
+            raise DirectDownloadLinkException('ERROR: Invalid Filebin URL')
+        parts = [unquote(part) for part in parts]
+        if not all(_safe_name(part) for part in parts):
+            raise DirectDownloadLinkException('ERROR: Invalid Filebin URL')
+        bin_id = parts[0]
+        bin_url = f'https://filebin.net/{quote(bin_id, safe="")}'
+
+        with Session() as session:
+            response = session.get(bin_url, headers={'Accept': 'application/json'}, timeout=HTTP_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            files = data['files']
+            if not isinstance(files, list) or not files:
+                raise DirectDownloadLinkException('ERROR: Filebin bin is empty')
+            contents = []
+            total_size = 0
+            names = set()
+            for entry in files:
+                filename = entry['filename']
+                size = entry['bytes']
+                if (not _safe_name(filename) or filename in names
+                        or isinstance(size, bool) or not isinstance(size, int) or size < 0):
+                    raise DirectDownloadLinkException('ERROR: Invalid Filebin file metadata')
+                names.add(filename)
+                total_size += size
+                contents.append({'path': '', 'filename': filename,
+                                 'url': f'{bin_url}/{quote(filename, safe="")}'})
+
+            if len(parts) == 2:
+                contents = [item for item in contents if item['filename'] == parts[1]]
+                if not contents:
+                    raise DirectDownloadLinkException('ERROR: Filebin file not found')
+
+            # Filebin may first issue a verification cookie instead of redirecting.
+            file_url = contents[0]['url']
+            for attempt in range(2):
+                response = session.get(file_url, allow_redirects=False, stream=True, timeout=HTTP_TIMEOUT)
+                try:
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        location = response.headers.get('Location')
+                        if not location:
+                            raise DirectDownloadLinkException('ERROR: Filebin redirect is missing its destination')
+                        direct_url = urljoin(file_url, location)
+                        if urlsplit(direct_url).scheme not in ('http', 'https'):
+                            raise DirectDownloadLinkException('ERROR: Invalid Filebin redirect')
+                        break
+                    response.raise_for_status()
+                    if attempt or 'text/html' not in response.headers.get('Content-Type', '').lower():
+                        raise DirectDownloadLinkException('ERROR: Filebin did not return a download redirect')
+                finally:
+                    response.close()
+            if len(contents) == 1:
+                return direct_url
+
+            details = {'title': bin_id, 'total_size': total_size, 'contents': contents}
+            cookie_header = session.prepare_request(Request('GET', file_url)).headers.get('Cookie')
+            if cookie_header:
+                details['header'] = 'Cookie: ' + cookie_header
+            return details
+    except DirectDownloadLinkException:
+        raise
+    except (RequestException, ValueError, KeyError, TypeError) as exc:
+        raise DirectDownloadLinkException(f'ERROR: Unable to resolve Filebin link: {exc}') from exc
+
+
+_TIMEOUT = 30
+_BASE = "https://storage.to"
+_ID = re.compile(r"[A-Za-z0-9]{9}\Z")
+_STREAM = re.compile(r'streamController\.enqueue\(("(?:\\.|[^"\\])*")\)')
+
+
+def _get(session, url, **kwargs):
+    try:
+        return session.get(url, timeout=_TIMEOUT, **kwargs)
+    except RequestsError as exc:
+        raise DirectDownloadLinkException(f"ERROR: storage.to request failed: {exc}") from exc
+
+
+def _error(response):
+    if response.status_code == 401:
+        raise DirectDownloadLinkException("ERROR: storage.to share is password protected")
+    if response.status_code in (404, 410):
+        raise DirectDownloadLinkException("ERROR: storage.to share not found or expired")
+    if response.status_code == 403 and response.headers.get("cf-mitigated", "").lower() == "challenge":
+        raise DirectDownloadLinkException("ERROR: storage.to requires a Cloudflare challenge")
+    if not response.ok:
+        raise DirectDownloadLinkException(f"ERROR: storage.to returned HTTP {response.status_code}")
+
+
+def _view(page):
+    for match in _STREAM.finditer(page):
+        try:
+            values = json.loads(json.loads(match.group(1)))
+            def field(obj, name):
+                for key, index in obj.items():
+                    if key.startswith("_") and values[int(key[1:])] == name:
+                        return values[index] if isinstance(index, int) and 0 <= index < len(values) else None
+                return None
+            root = values[0]
+            loader = field(root, "loaderData")
+            route = field(loader, "routes/file")
+            view = field(route, "view")
+            if isinstance(view, dict):
+                return {name: field(view, name) for name in (
+                    "id", "state", "is_password_protected", "collection_gate",
+                    "mint_proof", "mint_challenge_required",
+                )}
+        except (ValueError, TypeError, IndexError, AttributeError, KeyError):
+            continue
+    raise DirectDownloadLinkException("ERROR: Could not read storage.to share details")
+
+
+def _file(session, file_id):
+    page = _get(session, f"{_BASE}/{file_id}")
+    _error(page)
+    view = _view(page.text)
+    if view.get("id") != file_id:
+        raise DirectDownloadLinkException("ERROR: Invalid storage.to share details")
+    if view.get("is_password_protected") or view.get("collection_gate"):
+        raise DirectDownloadLinkException("ERROR: storage.to share is password protected")
+    if view.get("state") != "ready":
+        raise DirectDownloadLinkException("ERROR: storage.to file is not available for download")
+    if view.get("mint_challenge_required"):
+        raise DirectDownloadLinkException("ERROR: storage.to requires a Turnstile challenge")
+    proof = view.get("mint_proof")
+    if not isinstance(proof, str) or not proof:
+        raise DirectDownloadLinkException("ERROR: storage.to did not provide a download proof")
+    response = _get(session, f"{_BASE}/{file_id}/download", headers={"Accept": "application/json", "x-mint-proof": proof})
+    if response.status_code == 403 and response.headers.get("cf-mitigated", "").lower() != "challenge":
+        try:
+            error = response.json().get("error", {})
+            code = error.get("code", "") if isinstance(error, dict) else str(error)
+        except ValueError:
+            code = ""
+        if "password" in code.lower():
+            raise DirectDownloadLinkException("ERROR: storage.to share is password protected")
+        raise DirectDownloadLinkException(f"ERROR: storage.to download denied{': ' + code if code else ''}")
+    _error(response)
+    try:
+        data = response.json()
+        link = data.get("url")
+    except (ValueError, AttributeError) as exc:
+        raise DirectDownloadLinkException("ERROR: Invalid storage.to download response") from exc
+    if not isinstance(link, str) or urlparse(link).scheme not in ("http", "https") or not urlparse(link).netloc:
+        raise DirectDownloadLinkException("ERROR: storage.to did not provide a direct download URL")
+    return link
+
+
+def storageto(url):
+    parsed = urlparse(url)
+    parts = parsed.path.strip("/").split("/")
+    collection = len(parts) == 2 and parts[0] == "c"
+    if parsed.scheme not in ("http", "https") or parsed.hostname not in ("storage.to", "www.storage.to") or not (len(parts) == 1 or collection) or not _ID.fullmatch(parts[-1]):
+        raise DirectDownloadLinkException("ERROR: Invalid storage.to share URL")
+    share_id = parts[-1]
+    with CurlSession(impersonate="chrome") as session:
+        if not collection:
+            return _file(session, share_id)
+        response = _get(session, f"{_BASE}/c/{share_id}.json", headers={"Accept": "application/json"})
+        _error(response)
+        try:
+            data = response.json()
+            files = data.get("files")
+        except (ValueError, AttributeError) as exc:
+            raise DirectDownloadLinkException("ERROR: Invalid storage.to collection response") from exc
+        if not isinstance(files, list) or not files:
+            raise DirectDownloadLinkException("ERROR: storage.to collection is empty or unavailable")
+        contents = []
+        total_size = 0
+        for item in files:
+            if not isinstance(item, dict):
+                raise DirectDownloadLinkException("ERROR: Invalid storage.to collection file")
+            file_id, filename, size = item.get("id"), item.get("filename"), item.get("size")
+            if not isinstance(file_id, str) or not _ID.fullmatch(file_id) or not isinstance(filename, str) or not filename or not isinstance(size, int) or isinstance(size, bool) or size < 0:
+                raise DirectDownloadLinkException("ERROR: Invalid storage.to collection file")
+            contents.append({"path": "", "filename": filename, "url": _file(session, file_id)})
+            total_size += size
+        return {"title": share_id, "total_size": total_size, "contents": contents}
 
 
 def real_debrid(url: str, tor=False, cancel_event=None):

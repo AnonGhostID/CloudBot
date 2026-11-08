@@ -8,6 +8,11 @@ HOST_UPLOAD_TARGETS = {
     'stp': 'streamtape',
     'ab': 'akirabox',
     'vf': 'vikingfile',
+    'fs': 'filester',
+    'fm': 'filemirage',
+    'tf': 'transferit',
+    'st': 'storageto',
+    'fb': 'filebin',
 }
 
 HOST_CREDENTIAL_VARS = {
@@ -17,6 +22,11 @@ HOST_CREDENTIAL_VARS = {
     'streamtape': 'STREAMTAPE_CREDENTIALS',
     'akirabox': None,
     'vikingfile': 'VIKINGFILE_API_KEY',
+    'filester': 'FILESTER_API_KEY',
+    'filemirage': 'FILEMIRAGE_API_KEY',
+    'transferit': None,
+    'storageto': 'STORAGETO_API_KEY',
+    'filebin': None,
 }
 
 
@@ -33,7 +43,7 @@ def upload_host_credential(host: str, settings: dict) -> str:
 
 
 def upload_host_credential_error(host: str, settings: dict) -> str | None:
-    if host in ('akirabox', 'vikingfile'):
+    if host in ('akirabox', 'vikingfile', 'filester', 'filemirage', 'transferit', 'storageto', 'filebin'):
         return None
     names = {
         'gofile': 'GoFile',

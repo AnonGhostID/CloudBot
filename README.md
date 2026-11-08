@@ -54,9 +54,9 @@ Telegram buttons use blue for navigation and links, green for confirmations and 
       <summary><b>Upload Hosts</b></summary>
 
     - Upload Files/Folder in the Supported Sites
-      - GoFile, StreamTape, PixelDrain, BuzzHeavier and AkiraBox
+      - GoFile, StreamTape, PixelDrain, BuzzHeavier, AkiraBox, VikingFile, Filester, FileMirage, Transfer.it, storage.to and Filebin
     - Upload to enabled hosts or select one host per task
-    - AkiraBox uploads anonymously; other explicit host selections require user or shared config credentials. StreamTape requires a login and API key.
+    - AkiraBox, VikingFile, Filester, FileMirage, Transfer.it, storage.to and Filebin support anonymous uploads. StreamTape requires a login and API key.
     </details></li>
     <li><details>
       <summary><b>Google Drive</b></summary>
@@ -699,14 +699,17 @@ python3 generate_drive_token.py
 - `RCLONE_PATH` is like `GDRIVE_ID` a default path for mirror. In additional to those variables `DEFAULT_UPLOAD` to choose the default tool whether it's rclone or google-api-python-client.
 - If `DEFAULT_UPLOAD` = 'rc' then you must fill `RCLONE_PATH` with path as default one or with `rcl` to select destination path on each new task.
 - If `DEFAULT_UPLOAD` = 'gd' then you must fill `GDRIVE_ID` with folder/TD id.
-- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code (`gf`, `bh`, `pd`, `stp`, or `ab`) selects that host only.
+- If `DEFAULT_UPLOAD` = `hosts`, uploads use the enabled Upload Hosts configured in user settings. A host code selects that host only.
 - Existing `DEFAULT_UPLOAD=ddl` settings are migrated to `hosts`. If the value comes from an external environment, change it there to `hosts`.
 - Mount `rclone.conf` at `/usr/src/app/rclone.conf` when running the Docker container, or use bot settings to upload it as a private file.
 - If rclone.conf uploaded from usetting or added in `rclone/{user_id}.conf` then `RCLONE_PATH` must start with `mrcc:`.
 - Whenever you want to write path manually to use user rclone.conf that added from usetting then you must add the `mrcc:` at the beginning.
-- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up stp` for StreamTape, or `-up ab` for AkiraBox. Codes are case-insensitive and select only that host, even if its toggle is disabled. AkiraBox needs no credentials; other explicit selections require user or shared config credentials before downloading. StreamTape requires `login:key`. Automatic multi-host BuzzHeavier uploads can use anonymous access.
+- Use `-up gf` for GoFile, `-up bh` for BuzzHeavier, `-up pd` for PixelDrain, `-up stp` for StreamTape, `-up ab` for AkiraBox, `-up vf` for VikingFile, `-up fs` for Filester, `-up fm` for FileMirage, `-up tf` for Transfer.it, `-up st` for storage.to, or `-up fb` for Filebin. Codes are case-insensitive and select only that host, even if its toggle is disabled. StreamTape requires `login:key`.
 - AkiraBox uses its undocumented guest website upload flow, which may change. It accepts one non-empty file up to 5 GiB (5,368,709,120 bytes), not folders. Guest links expire after 7 days without a download.
-- Optional `GOFILE_API_KEY`, `PIXELDRAIN_API_KEY`, `BUZZHEAVIER_API_KEY`, and `STREAMTAPE_CREDENTIALS` (`login:key`) in `config.env` are shared fallbacks for all authorized users. Previously saved user credentials take precedence and can be deleted in User Settings, but new credentials are configured in `config.env`. Shared credentials do not enable hosts automatically; enable each host in User Settings for multi-host uploads.
+- Filester, FileMirage and Transfer.it accept single files, not folders. FileMirage uses its undocumented website upload flow and may change. Transfer.it uses the community-maintained `transferit-py` client.
+- storage.to's free tier supports files up to 25 GB and expires uploads; anonymous uploads have daily file and bandwidth quotas. `STORAGETO_API_KEY` optionally attaches uploads to an account.
+- Filebin and storage.to share links can be resolved for downloads. storage.to resolution uses its website download flow and fails when Cloudflare or Turnstile requires a challenge. Signed download URLs may expire while tasks are queued.
+- `GOFILE_API_KEY`, `PIXELDRAIN_API_KEY`, `BUZZHEAVIER_API_KEY`, `STREAMTAPE_CREDENTIALS` (`login:key`), `VIKINGFILE_API_KEY` (user hash), `FILESTER_API_KEY`, and `FILEMIRAGE_API_KEY` in `config.env` are shared fallbacks. Previously saved user credentials take precedence. Shared credentials do not enable hosts automatically; enable each host in User Settings for multi-host uploads.
 - PixelDrain uploads accept its HTTP 201 file-info response even when the `success` field is absent; a file ID is still required.
 - Other `-up` destinations are `gd` (GDRIVE_ID), `rc` (RCLONE_PATH), `rcl` (select an Rclone path), and `remote:path` or `mrcc:remote:path` for owner or user Rclone configurations.
 
